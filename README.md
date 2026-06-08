@@ -1,58 +1,292 @@
-# Zero – A Local-First Reasoning Agent
+# Zero - A Local-First Reasoning Agent
 
-Zero is a contest-focused fork of the existing Progress ASP.NET Core application. It keeps the working application foundation and narrows the product around a local-first reasoning agent for personal productivity.
+Zero is an ASP.NET Core web application that turns a personal productivity workspace into a local-first reasoning agent. It is built from the existing Progress application foundation and narrowed for a Microsoft Agents League contest demo around Zero Chat, memory, tasks, calendar, search, finance, email, settings, dashboard, and notifications.
 
-## Problem Solved
+The goal is not to create another generic chatbot. Zero gives the assistant access to the user's local workspace context so it can reason over real tasks, schedules, reminders, saved memory, finance records, and configured search results.
 
-Modern assistants often depend on remote context, disconnected tools, or one-off chat sessions. Zero gives a user a local workspace where the assistant can reason over tasks, calendar context, finance data, email context, search results, saved memory, and notifications without replacing the existing application workflow.
+## Project Purpose
 
-## Features
+Most AI assistant demos are disconnected from the tools people actually use every day. They answer questions, but they do not understand the user's current workload, local notes, calendar pressure, reminders, or operational context.
 
-- Zero Chat / AI assistant with saved local memory and conversation history.
-- Dashboard for task, calendar, reminder, and finance visibility.
-- Task and calendar management.
-- Finance dashboard and transaction workflows.
+Zero addresses that by combining:
+
+- A local-first workspace for daily planning and personal operations.
+- A reasoning assistant that can use saved memory and recent conversation context.
+- Existing app modules for tasks, calendar, finance, email, search, settings, dashboard, and notifications.
+- A demo-ready UI with visible Zero branding and Demo Mode.
+
+## Product Name
+
+**Zero - A Local-First Reasoning Agent**
+
+Zero is positioned as a practical local assistant for people who want AI help inside their own working context rather than a detached chat window.
+
+## Core Features
+
+### Zero Chat
+
+Zero Chat is the main assistant interface. It supports text interaction, conversation history, saved memory, local tool actions, and optional voice-related settings already present in the copied application.
+
+Key capabilities:
+
+- Ask questions about local workspace context.
+- Use saved memory during future conversations.
+- Ask for task, calendar, finance, and notification summaries.
+- Use configured web search for current public information.
+- Keep the assistant workflow inside the local app.
+
+### Memory
+
+Zero includes saved memory so the assistant can remember persistent user preferences or important context.
+
+Examples:
+
+- Preferred timezone.
+- Normal planning style.
+- Important project constraints.
+- Personal reminders or operating preferences.
+
+### Dashboard
+
+The dashboard gives a quick overview of daily work and context. It keeps the contest demo grounded in real application data instead of only assistant responses.
+
+Included dashboard areas:
+
+- Task progress and status.
+- Upcoming work.
+- Priority focus.
+- Reminders.
+- Finance summary widgets.
+- Calendar-adjacent planning context.
+
+### Tasks
+
+The task system is based on the existing scheduling/event workflow. It supports creating, editing, tracking, and organizing work items.
+
+Task data is used by both the dashboard and assistant context.
+
+### Calendar
+
+The calendar surface provides schedule visibility and supports daily planning. It works with task/event data and display preferences configured in Settings.
+
+### Finance
+
+The finance module provides local finance visibility for the demo. It supports accounts, budgets, categories, recurring items, and transactions from the copied application.
+
+Zero can use this data for practical summaries such as monthly expense overviews or upcoming finance context.
+
+### Email
+
+The email hub and integration settings remain part of the contest scope. The current foundation keeps the existing email/calendar integration configuration without adding Microsoft Graph yet.
+
+### Search
+
+The Search page is a simple UI over the existing SearXNG-backed search service. Search is also available to the assistant workflow for public, current information when configured.
+
+### Settings
+
+Settings centralizes user preferences and assistant configuration.
+
+Contest-visible settings include:
+
+- Calendar and display preferences.
+- AI assistant settings.
 - Email and calendar integration settings.
-- Search-oriented local tools exposed through the assistant.
-- Settings workspace for AI, memory, display, and integration preferences.
-- Notification center and proactive reminders.
-- Visible Demo Mode flag for contest presentation.
+- Zero-related local configuration.
+
+Non-demo operational settings were hidden from the visible navigation/settings surface for the first contest foundation.
+
+### Notifications
+
+Zero includes a notification center and proactive reminder workflow from the existing app. This helps demonstrate that the agent is connected to actual user context and not only a standalone chat screen.
+
+## Demo Mode
+
+The application includes a visible Demo Mode flag in `ScheduleApp/appsettings.json`:
+
+```json
+"DemoMode": true
+```
+
+When enabled, the shared app layout displays a Demo Mode badge in the header. This makes the contest scope explicit during presentation.
 
 ## Demo Scenarios
 
-- Ask Zero to summarize current priorities from tasks, calendar events, reminders, and finance context.
-- Add or edit a task, then show the update reflected in the dashboard and calendar.
-- Save a memory item in Zero Chat and ask a follow-up that uses that local context.
-- Review finance status from the dashboard and ask the assistant for a plain-English summary.
-- Open settings to show local AI/provider configuration and demo-focused controls.
+### Scenario 1: Daily Priority Briefing
+
+Open the dashboard and ask Zero Chat:
+
+```text
+What should I focus on today?
+```
+
+Zero should use the local workspace context, such as tasks, calendar items, reminders, and finance signals, to produce a grounded summary.
+
+### Scenario 2: Task Creation And Tracking
+
+Create or edit a task, then show it in the Tasks or Calendar surface. This demonstrates that Zero is connected to the existing productivity workflow.
+
+Example prompt:
+
+```text
+Create a task to prepare my demo checklist tomorrow at 9 AM.
+```
+
+### Scenario 3: Memory-Aware Follow-up
+
+Save a memory item, then ask a follow-up that depends on it.
+
+Example:
+
+```text
+Remember that I prefer planning in Auckland time.
+```
+
+Then:
+
+```text
+Schedule my next focus block for tomorrow morning.
+```
+
+### Scenario 4: Finance Context Summary
+
+Open Finance or ask Zero for a financial summary.
+
+Example:
+
+```text
+Summarize this month's business expenses.
+```
+
+### Scenario 5: Search For Current Information
+
+Use the Search page or ask Zero for current public information when SearXNG is configured.
+
+Example:
+
+```text
+Search for the latest ASP.NET Core release notes.
+```
+
+### Scenario 6: Settings And Demo Mode
+
+Open Settings and show the local assistant configuration, display preferences, integration settings, and the visible Demo Mode badge.
+
+## Architecture Overview
+
+Zero currently keeps the original `ScheduleApp` project name and namespaces to reduce migration risk during the contest foundation stage.
+
+High-level structure:
+
+- `ScheduleApp/Controllers` - MVC controllers and API endpoints.
+- `ScheduleApp/Views` - Razor views for dashboard, tasks, calendar, finance, email, settings, search, and Zero Chat.
+- `ScheduleApp/Services` - Business logic for assistant workflows, local tools, memory, dashboard, notifications, finance, search, and settings.
+- `ScheduleApp/Data` - Entity Framework Core database context and data initialization.
+- `ScheduleApp/Models` - Domain models and view models.
+- `ScheduleApp/wwwroot` - Static CSS, JavaScript, icons, logos, and web manifest.
+- `docs` - Contest scope, architecture notes, and demo scenario notes.
+
+## Local-First Data
+
+The copied foundation uses SQLite for the local database. The application creates and uses app data under `ScheduleApp/App_Data`.
+
+The repo currently includes existing demo/local data where available. Additional seed data should only be added when existing data is not enough for a clear demo.
+
+## Technology Stack
+
+- ASP.NET Core MVC
+- .NET target currently configured as `net10.0`
+- Entity Framework Core
+- SQLite
+- Bootstrap
+- Bootstrap Icons
+- JavaScript and Razor views
+- log4net
+- OllamaSharp
+- Microsoft.Extensions.AI
+- Model Context Protocol package references already present in the copied project
 
 ## Local Setup
 
-1. Install the .NET SDK used by the project. The copied source currently targets `net10.0`.
-2. Restore and build the solution:
+### Prerequisites
+
+- Windows or any environment that can run the configured .NET SDK.
+- .NET SDK compatible with the project target.
+- Optional SearXNG instance if you want live web search.
+- Optional local or configured AI provider depending on the assistant settings.
+
+### Build
+
+From the repository root:
 
 ```powershell
 dotnet build .\Zero.ReasoningAgent.sln
 ```
 
-3. Run the web app:
+### Run
 
 ```powershell
 dotnet run --project .\ScheduleApp\ScheduleApp.csproj
 ```
 
-4. Open the local URL printed by `dotnet run`.
+Open the local URL printed by `dotnet run`.
 
-## Technology Stack
+### App Data
 
-- ASP.NET Core MVC
-- Entity Framework Core
-- SQLite local database
-- Bootstrap and Bootstrap Icons
-- log4net
-- OllamaSharp and Microsoft.Extensions.AI integration already present in the copied codebase
-- Model Context Protocol server package already present in the copied codebase
+The application uses:
 
-## Contest Scope Note
+```text
+ScheduleApp/App_Data
+```
 
-This foundation does not add Microsoft Foundry, Microsoft Graph, or Copilot-specific code. Those integrations are intentionally deferred until after the copy, cleanup, rename, and contest-scoping step is stable.
+for local database-related runtime files, data protection keys, and logs.
+
+## Contest Scope
+
+This foundation intentionally focuses on copy, cleanup, branding, and contest readiness.
+
+Included visible modules:
+
+- Zero Chat / AI assistant
+- Dashboard
+- Tasks
+- Calendar
+- Finance
+- Email
+- Search
+- Memory
+- Settings
+- Notifications
+
+Hidden from the visible demo surface:
+
+- FlowQ
+- SCADA
+- S3
+- Nx Witness
+- Milestone
+- Robot control
+- Experimental video/security modules
+- Trading
+- Maintenance/projects admin surface
+- Operational database and market-data admin tabs
+
+## Explicitly Not Added Yet
+
+This task does not add:
+
+- Microsoft Foundry
+- Microsoft Graph
+- Copilot-specific code
+
+Those integrations are intentionally deferred until the base contest project is stable.
+
+## Current Build Status
+
+The solution builds successfully with:
+
+```powershell
+dotnet build .\Zero.ReasoningAgent.sln
+```
+
+There is one existing warning in the copied Trading service about an unread `logger` parameter. Trading is hidden from the contest demo surface for now, and the warning does not block the build.
