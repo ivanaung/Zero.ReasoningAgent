@@ -21,7 +21,7 @@ var applicationLogsRoot = Path.Combine(appDataRoot, "Logs");
 Directory.CreateDirectory(applicationLogsRoot);
 GlobalContext.Properties["AppLogDirectory"] = applicationLogsRoot;
 var sqliteConnectionString = ResolveSqliteConnectionString(
-    builder.Configuration.GetConnectionString("Default") ?? "Data Source=schedule.db",
+    builder.Configuration.GetConnectionString("Default") ?? "Data Source=agentzero.db",
     appDataRoot);
 
 // Add services to the container.
@@ -221,7 +221,7 @@ static string ResolveSqliteConnectionString(string connectionString, string appD
     var builder = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder(connectionString);
     if (string.IsNullOrWhiteSpace(builder.DataSource))
     {
-        builder.DataSource = Path.Combine(appDataRoot, "schedule.db");
+        builder.DataSource = Path.Combine(appDataRoot, "agentzero.db");
         return builder.ToString();
     }
 

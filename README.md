@@ -190,6 +190,12 @@ High-level structure:
 
 The copied foundation uses SQLite for the local database. The application creates and uses app data under `AgentZero/App_Data`.
 
+The primary local database file is:
+
+```text
+AgentZero/App_Data/agentzero.db
+```
+
 The repo currently includes existing demo/local data where available. Additional seed data should only be added when existing data is not enough for a clear demo.
 
 ## Technology Stack

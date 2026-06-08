@@ -10,6 +10,7 @@ Zero is currently a contest-focused copy of the existing Progress MVC applicatio
 - Services hold business logic for scheduling, dashboard summaries, finance, notifications, AI settings, local tools, memory, and assistant workflows.
 - Entity Framework Core uses SQLite for the local database.
 - Data protection keys and logs are kept under `App_Data`.
+- The primary local SQLite database is `App_Data/agentzero.db`.
 
 ## Demo Mode
 
