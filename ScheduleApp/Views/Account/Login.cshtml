@@ -1,0 +1,62 @@
+@model ScheduleApp.Models.ViewModels.LoginViewModel
+@{
+    Layout = null;
+    var returnUrl = Model.ReturnUrl ?? Url.Action("Index", "Home");
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In - Zero</title>
+    <link rel="icon" href="~/img/favicon.ico" sizes="any" asp-append-version="true" />
+    <link rel="apple-touch-icon" href="~/img/apple-touch-icon.png" asp-append-version="true" />
+    <link rel="manifest" href="~/site.webmanifest" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="login-page">
+    <main class="login-card card border-0 shadow-lg">
+        <div class="login-head">
+            <img src="~/img/butlerzero.png" alt="Zero logo" class="login-logo" asp-append-version="true" />
+            <div class="management-kicker">Workspace Access</div>
+            <h3 class="fw-bold mb-0">Sign in to Zero</h3>
+        </div>
+
+        @if (TempData["LoginError"] is string loginError && !string.IsNullOrWhiteSpace(loginError))
+        {
+            <div class="alert alert-danger border-0 shadow-sm small">@loginError</div>
+        }
+
+        @if (Model.ShowGoogleLogin)
+        {
+            <form asp-action="GoogleSignIn" method="post" class="mb-3">
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold">
+                    <i class="bi bi-google"></i> Continue With Google
+                </button>
+            </form>
+
+            <div class="login-divider"><span>Local account</span></div>
+        }
+
+        <form asp-action="Login" method="post" class="d-flex flex-column gap-3">
+            <input asp-for="ReturnUrl" type="hidden" value="@returnUrl" />
+            <div>
+                <label asp-for="Username" class="form-label fw-semibold small">Username</label>
+                <input asp-for="Username" class="form-control form-control-lg" autocomplete="username" />
+                <span asp-validation-for="Username" class="text-danger small"></span>
+            </div>
+            <div>
+                <label asp-for="Password" class="form-label fw-semibold small">Password</label>
+                <input asp-for="Password" class="form-control form-control-lg" autocomplete="current-password" />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+            <button type="submit" class="btn btn-dark w-100 py-3 fw-semibold">
+                <i class="bi bi-person-lock"></i> Sign In
+            </button>
+        </form>
+    </main>
+</body>
+</html>

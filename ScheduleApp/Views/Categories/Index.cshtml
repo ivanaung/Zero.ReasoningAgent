@@ -1,0 +1,374 @@
+@model ScheduleApp.Models.ViewModels.MetadataIndexViewModel
+@{
+    ViewData["Title"] = "Meta data";
+    var isStagesTab = string.Equals(Model.ActiveTab, "stages", StringComparison.OrdinalIgnoreCase);
+}
+
+<div class="management-shell d-flex flex-column gap-4">
+    <div class="management-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
+        <div>
+            <h5 class="mb-1 fw-bold">Meta data Registry</h5>
+            <p class="text-muted small mb-0">Manage reusable task categories and product stages from one compact setup surface.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="metadata-header-action @(isStagesTab ? "d-none" : string.Empty)" data-header-tab="categories">
+                <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill">@Model.Categories.Count Categories</span>
+                <button class="btn btn-primary ms-2" type="button" id="openCreateCategoryModal" data-bs-toggle="modal" data-bs-target="#categoryModal">
+                    <i class="bi bi-plus-lg"></i> New Category
+                </button>
+            </div>
+            <div class="metadata-header-action @(isStagesTab ? string.Empty : "d-none")" data-header-tab="stages">
+                <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill">@Model.Stages.Count Stages</span>
+                <button class="btn btn-primary ms-2" type="button" id="openCreateStageModal" data-bs-toggle="modal" data-bs-target="#stageModal">
+                    <i class="bi bi-plus-lg"></i> New Stage
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-pills gap-2 metadata-tabs" id="metadataTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(isStagesTab ? string.Empty : "active")" id="categories-tab" data-bs-toggle="pill" data-bs-target="#categories-pane" type="button" role="tab" aria-controls="categories-pane" aria-selected="@(!isStagesTab).ToString().ToLowerInvariant()">
+                Categories
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(isStagesTab ? "active" : string.Empty)" id="stages-tab" data-bs-toggle="pill" data-bs-target="#stages-pane" type="button" role="tab" aria-controls="stages-pane" aria-selected="@isStagesTab.ToString().ToLowerInvariant()">
+                Stages
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade @(isStagesTab ? string.Empty : "show active")" id="categories-pane" role="tabpanel" aria-labelledby="categories-tab" tabindex="0">
+            <div class="card management-card border-0">
+                <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="management-kicker">Configuration List</div>
+                        <h6 class="mb-0 fw-bold">Active Categories</h6>
+                    </div>
+                    <span class="small text-muted">Shared labels for board, calendar, and reporting views</span>
+                </div>
+
+                @if (Model.Categories.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 management-table">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Preview</th>
+                                    <th>Name</th>
+                                    <th>Color</th>
+                                    <th class="text-end pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Categories)
+                                {
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="management-color-dot" style="background-color: @item.Color;"></div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold">@item.Name</div>
+                                        </td>
+                                        <td>
+                                            <code class="management-code">@item.Color</code>
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <div class="d-inline-flex gap-2">
+                                                <button class="btn btn-sm btn-light edit-category-btn"
+                                                        type="button"
+                                                        data-id="@item.Id"
+                                                        data-name="@item.Name"
+                                                        data-color="@item.Color"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#categoryModal">
+                                                    <i class="bi bi-pencil-square"></i> Edit
+                                                </button>
+                                                <form asp-action="Delete" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-light text-danger" onclick="return confirm('Delete this category?')">
+                                                        <i class="bi bi-trash"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="management-empty-state">
+                        <div class="management-empty-icon">
+                            <i class="bi bi-tags"></i>
+                        </div>
+                        <h6 class="fw-bold mb-2">No categories yet</h6>
+                        <p class="text-muted mb-3">Start with a few shared labels to keep board and calendar views visually consistent.</p>
+                        <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#categoryModal">
+                            <i class="bi bi-plus-lg"></i> Create First Category
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="tab-pane fade @(isStagesTab ? "show active" : string.Empty)" id="stages-pane" role="tabpanel" aria-labelledby="stages-tab" tabindex="0">
+            <div class="card management-card border-0">
+                <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="management-kicker">Workflow Setup</div>
+                        <h6 class="mb-0 fw-bold">Product Stages</h6>
+                    </div>
+                    <span class="small text-muted">Project-specific lanes used by boards, timelines, and dashboard stage rollups</span>
+                </div>
+
+                @if (Model.Stages.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 management-table">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Stage</th>
+                                    <th>Description</th>
+                                    <th class="text-end pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var stage in Model.Stages)
+                                {
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="fw-semibold">@stage.Name</div>
+                                        </td>
+                                        <td>@(string.IsNullOrWhiteSpace(stage.Description) ? "-" : stage.Description)</td>
+                                        <td class="text-end pe-4">
+                                            <div class="d-inline-flex gap-2">
+                                                <button class="btn btn-sm btn-light edit-stage-btn"
+                                                        type="button"
+                                                        data-id="@stage.Id"
+                                                        data-name="@stage.Name"
+                                                        data-description="@stage.Description"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#stageModal">
+                                                    <i class="bi bi-pencil-square"></i> Edit
+                                                </button>
+                                                <form asp-action="DeleteStage" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@stage.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-light text-danger" onclick="return confirm('Delete this stage? Tasks will keep the stage name as plain text.')">
+                                                        <i class="bi bi-trash"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="management-empty-state">
+                        <div class="management-empty-icon">
+                            <i class="bi bi-diagram-3"></i>
+                        </div>
+                        <h6 class="fw-bold mb-2">No stages yet</h6>
+                        <p class="text-muted mb-3">Create stages here so task create and edit modals can stay compact and selection-based.</p>
+                        <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#stageModal">
+                            <i class="bi bi-plus-lg"></i> Create First Stage
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <div>
+                    <div class="management-kicker">Category Editor</div>
+                    <h5 class="modal-title fw-bold mb-0" id="categoryModalTitle">Create New Category</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 pb-4">
+                <form id="categoryForm" action="@Url.Action("Create")" method="post" class="d-flex flex-column gap-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Id" id="catId" value="0" />
+
+                    <div>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Category Name</label>
+                        <input type="text" name="Name" id="catName" class="form-control" placeholder="e.g. Personal, Work, Projects..." required maxlength="50" />
+                    </div>
+
+                    <div>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Accent Color</label>
+                        <input type="text" name="Color" id="catColor" class="form-control coloris-input" value="#2E5DA6" maxlength="7" pattern="^#([A-Fa-f0-9]{6})$" placeholder="#2E5DA6" data-coloris required />
+                        <div class="form-text">Choose a color to identify this category on the calendar and boards.</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center gap-2 pt-2">
+                        <div class="small text-muted">This modal layout is the base pattern for future admin lists.</div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary" id="submitCategoryBtn">Save Category</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="stageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <div>
+                    <div class="management-kicker">Stage Editor</div>
+                    <h5 class="modal-title fw-bold mb-0" id="stageModalTitle">Create New Stage</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 pb-4">
+                <form id="stageForm" action="@Url.Action("CreateStage")" method="post" class="d-flex flex-column gap-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Id" id="stageId" value="0" />
+
+                    <div>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Stage Name</label>
+                        <input type="text" name="Name" id="stageName" class="form-control" placeholder="e.g. Discovery, QA, Launch" required maxlength="100" />
+                    </div>
+
+                    <div>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Description</label>
+                        <textarea name="Description" id="stageDescription" class="form-control" rows="2" placeholder="Optional description of the stage" maxlength="500"></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center gap-2 pt-2">
+                        <div class="small text-muted">Task dialogs now select from this stage list instead of creating stages inline.</div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary" id="submitStageBtn">Save Stage</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            const categoryCreateAction = '@Url.Action("Create")';
+            const categoryEditAction = '@Url.Action("Edit")';
+            const stageCreateAction = '@Url.Action("CreateStage")';
+            const stageEditAction = '@Url.Action("EditStage")';
+            const categoryModalElement = document.getElementById('categoryModal');
+            const stageModalElement = document.getElementById('stageModal');
+
+            function syncHeaderActions(tabName) {
+                document.querySelectorAll('[data-header-tab]').forEach(element => {
+                    element.classList.toggle('d-none', element.getAttribute('data-header-tab') !== tabName);
+                });
+            }
+
+            function activateTab(tabName, updateHistory) {
+                const tabTrigger = document.querySelector(`[data-bs-target="#${tabName}-pane"]`);
+                if (!tabTrigger) {
+                    return;
+                }
+
+                bootstrap.Tab.getOrCreateInstance(tabTrigger).show();
+                syncHeaderActions(tabName);
+
+                if (updateHistory) {
+                    const nextUrl = new URL(window.location.href);
+                    nextUrl.searchParams.set('tab', tabName);
+                    window.history.replaceState({}, '', nextUrl);
+                }
+            }
+
+            function resetCategoryForm() {
+                $('#catId').val(0);
+                $('#catName').val('');
+                window.setColorPickerValue('#catColor', '#2E5DA6');
+                $('#categoryModalTitle').text('Create New Category');
+                $('#submitCategoryBtn').text('Save Category');
+                $('#categoryForm').attr('action', categoryCreateAction);
+            }
+
+            function resetStageForm() {
+                $('#stageId').val(0);
+                $('#stageName').val('');
+                $('#stageDescription').val('');
+                $('#stageModalTitle').text('Create New Stage');
+                $('#submitStageBtn').text('Save Stage');
+                $('#stageForm').attr('action', stageCreateAction);
+            }
+
+            $('#openCreateCategoryModal').on('click', function() {
+                resetCategoryForm();
+                activateTab('categories', true);
+            });
+
+            $('#openCreateStageModal').on('click', function() {
+                resetStageForm();
+                activateTab('stages', true);
+            });
+
+            $('.edit-category-btn').on('click', function() {
+                $('#catId').val($(this).data('id'));
+                $('#catName').val($(this).data('name'));
+                window.setColorPickerValue('#catColor', $(this).data('color'));
+                $('#categoryModalTitle').text('Edit Category');
+                $('#submitCategoryBtn').text('Update Category');
+                $('#categoryForm').attr('action', categoryEditAction);
+                activateTab('categories', true);
+            });
+
+            $('.edit-stage-btn').on('click', function() {
+                $('#stageId').val($(this).data('id'));
+                $('#stageName').val($(this).data('name'));
+                $('#stageDescription').val($(this).data('description'));
+                $('#stageModalTitle').text('Edit Stage');
+                $('#submitStageBtn').text('Update Stage');
+                $('#stageForm').attr('action', stageEditAction);
+                activateTab('stages', true);
+            });
+
+            document.querySelectorAll('#metadataTabs [data-bs-toggle="pill"]').forEach(tab => {
+                tab.addEventListener('shown.bs.tab', function(event) {
+                    const targetPane = event.target.getAttribute('data-bs-target') || '';
+                    const tabName = targetPane.replace('#', '').replace('-pane', '');
+                    if (tabName) {
+                        syncHeaderActions(tabName);
+                        const nextUrl = new URL(window.location.href);
+                        nextUrl.searchParams.set('tab', tabName);
+                        window.history.replaceState({}, '', nextUrl);
+                    }
+                });
+            });
+
+            syncHeaderActions('@(isStagesTab ? "stages" : "categories")');
+
+            categoryModalElement.addEventListener('hidden.bs.modal', function () {
+                resetCategoryForm();
+            });
+
+            stageModalElement.addEventListener('hidden.bs.modal', function () {
+                resetStageForm();
+            });
+        });
+    </script>
+}

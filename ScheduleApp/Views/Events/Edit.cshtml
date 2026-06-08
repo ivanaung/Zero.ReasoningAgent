@@ -1,0 +1,14 @@
+@model ScheduleApp.Models.ViewModels.EventFormViewModel
+@{
+    ViewData["Title"] = $"Edit: {Model.Title}";
+}
+
+<div class="row justify-content-center h-100 align-items-start py-4">
+    <div class="col-xl-9">
+        <partial name="_EventForm" model="Model" />
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

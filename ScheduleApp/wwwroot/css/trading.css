@@ -1,0 +1,14 @@
+.trading-shell .card,
+.trading-advice-card {
+    border-radius: 16px;
+}
+
+.trading-disclaimer {
+    border-radius: 12px;
+}
+
+.trading-advice-card {
+    padding: 1rem;
+    background: linear-gradient(180deg, rgba(13, 110, 253, 0.06), rgba(25, 135, 84, 0.04));
+    border: 1px solid rgba(13, 110, 253, 0.1);
+}

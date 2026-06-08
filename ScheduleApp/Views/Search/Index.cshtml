@@ -1,0 +1,101 @@
+@{
+    ViewData["Title"] = "Search";
+}
+
+<div class="search-shell d-flex flex-column gap-3">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <div class="management-kicker">Local Search Tool</div>
+            <h4 class="mb-2 fw-bold">Search</h4>
+            <p class="text-muted mb-4">Run a configured SearXNG search from the Zero workspace. Results also remain available to Zero Chat through the existing search tool.</p>
+
+            <form id="searchForm" class="row g-2">
+                <div class="col-md-9">
+                    <label class="form-label fw-bold small" for="searchQuery">Query</label>
+                    <input id="searchQuery" name="q" class="form-control form-control-lg" placeholder="Search current public information..." autocomplete="off" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold small" for="searchLimit">Results</label>
+                    <select id="searchLimit" name="maxResults" class="form-select form-select-lg">
+                        <option value="3">3</option>
+                        <option value="5" selected>5</option>
+                        <option value="10">10</option>
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button class="btn btn-primary btn-lg w-100" type="submit" title="Search">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <div id="searchStatus" class="text-muted small mb-3">Enter a query to search.</div>
+            <div id="searchResults" class="d-flex flex-column gap-3"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('searchForm')?.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const query = document.getElementById('searchQuery').value.trim();
+            const maxResults = document.getElementById('searchLimit').value;
+            const status = document.getElementById('searchStatus');
+            const resultsHost = document.getElementById('searchResults');
+
+            resultsHost.innerHTML = '';
+            if (!query) {
+                status.textContent = 'Enter a query to search.';
+                return;
+            }
+
+            status.textContent = 'Searching...';
+
+            try {
+                const response = await fetch(`/api/search/test?q=${encodeURIComponent(query)}&maxResults=${encodeURIComponent(maxResults)}`);
+                const payload = await response.json();
+
+                if (!response.ok || !payload.success) {
+                    status.textContent = payload.error || payload.errorMessage || 'Search failed.';
+                    return;
+                }
+
+                status.textContent = `${payload.results.length} result(s) for "${payload.query}" in ${payload.elapsedMilliseconds} ms.`;
+                resultsHost.innerHTML = payload.results.map(item => `
+                    <article class="border rounded-4 p-3 bg-white">
+                        <a class="fw-bold text-decoration-none" href="${escapeAttribute(safeUrl(item.url))}" target="_blank" rel="noopener">${escapeHtml(item.title)}</a>
+                        <div class="small text-muted text-break">${escapeHtml(item.url)}</div>
+                        <p class="mb-0 mt-2">${escapeHtml(item.snippet || '')}</p>
+                    </article>
+                `).join('');
+            } catch {
+                status.textContent = 'Search service is unavailable.';
+            }
+        });
+
+        function escapeHtml(value) {
+            const span = document.createElement('span');
+            span.textContent = value || '';
+            return span.innerHTML;
+        }
+
+        function escapeAttribute(value) {
+            return escapeHtml(value).replace(/"/g, '&quot;');
+        }
+
+        function safeUrl(value) {
+            try {
+                const url = new URL(value || '', window.location.origin);
+                return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '#';
+            } catch {
+                return '#';
+            }
+        }
+    </script>
+}

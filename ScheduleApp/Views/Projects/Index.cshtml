@@ -1,0 +1,162 @@
+@model List<ScheduleApp.Models.Project>
+@{
+    ViewData["Title"] = "Maintenance";
+}
+
+<div class="h-100 d-flex flex-column">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="mb-1 fw-bold">Management & Health</h5>
+            <p class="text-muted small mb-0">Monitor long-term product lifecycles and roadblocks.</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#projectModal" type="button">
+            <i class="bi bi-plus-lg"></i> New Product
+        </button>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="row g-3">
+        @foreach (var project in Model)
+        {
+            var total = project.Events.Count;
+            var done = project.Events.Count(e => e.Status == ScheduleApp.Models.EventStatus.Done);
+            var progress = total > 0 ? (int)((double)done / total * 100) : 0;
+            var blocked = project.Events.Count(e => e.Status == ScheduleApp.Models.EventStatus.Blocked);
+
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm project-card">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle" style="width: 10px; height: 10px; background-color: @project.Color"></div>
+                                <h6 class="mb-0 fw-bold">@project.Name</h6>
+                            </div>
+                            <span class="badge @(project.Status == ScheduleApp.Models.ProjectStatus.Active ? "bg-success-subtle text-success" : "bg-light text-muted") px-2 py-1" style="font-size: 10px;">@project.Status</span>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted" style="font-size: 11px; font-weight: 600;">Overall Status</span>
+                                <span class="fw-bold text-primary" style="font-size: 11px;">@progress%</span>
+                            </div>
+                            <div class="progress" style="height: 5px; background: #f0f0f0;">
+                                <div class="progress-bar" style="width: @progress%; background: @project.Color"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3 pt-2 border-top">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold" style="font-size: 13px;">@total</div>
+                                <div class="text-muted small text-uppercase" style="font-size: 9px; letter-spacing: 0.05em;">Total</div>
+                            </div>
+                            <div class="flex-grow-1 border-start ps-3">
+                                <div class="fw-bold @(blocked > 0 ? "text-danger" : "")" style="font-size: 13px;">@blocked</div>
+                                <div class="text-muted small text-uppercase" style="font-size: 9px; letter-spacing: 0.05em;">Blocked</div>
+                            </div>
+                            <div class="flex-grow-1 border-start ps-3">
+                                <div class="fw-bold text-success" style="font-size: 13px;">@done</div>
+                                <div class="text-muted small text-uppercase" style="font-size: 9px; letter-spacing: 0.05em;">Done</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light border-0 p-2 d-flex gap-2">
+                        <a asp-controller="Board" asp-action="Index" asp-route-projectId="@project.Id" class="btn btn-soft flex-grow-1">
+                            <i class="bi bi-columns-gap me-1"></i> Open Board
+                        </a>
+                        <button class="btn btn-white icon-btn edit-project-btn"
+                                type="button"
+                                aria-label="Edit product"
+                                data-id="@project.Id"
+                                data-name="@project.Name"
+                                data-description="@project.Description"
+                                data-color="@project.Color"
+                                data-status="@((int)project.Status)"
+                                data-bs-toggle="modal"
+                                data-bs-target="#projectModal">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="projectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: var(--radius-lg);">
+            <div class="modal-header border-bottom px-4">
+                <h6 class="modal-title fw-bold" id="projectModalTitle">Initialise Product</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="Create" method="post" id="projectForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="projectId" value="0">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Registry Name</label>
+                        <input type="text" name="Name" id="projectName" class="form-control" placeholder="e.g. Project Alpha" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Description</label>
+                        <textarea name="Description" id="projectDescription" class="form-control" rows="3" placeholder="Short project context and scope"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Identification Color</label>
+                        <input type="text" name="Color" id="projectColor" class="form-control coloris-input" value="#2E5DA6" maxlength="7" pattern="^#([A-Fa-f0-9]{6})$" placeholder="#2E5DA6" data-coloris required>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Status</label>
+                        <select name="Status" id="projectStatus" class="form-select" asp-items="Html.GetEnumSelectList<ScheduleApp.Models.ProjectStatus>()"></select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="projectSubmitBtn">Create Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const createAction = '@Url.Action("Create")';
+            const editAction = '@Url.Action("Edit")';
+            const modalElement = document.getElementById('projectModal');
+
+            function resetProjectForm() {
+                $('#projectForm').attr('action', createAction);
+                $('#projectModalTitle').text('Initialise Product');
+                $('#projectSubmitBtn').text('Create Product');
+                $('#projectId').val(0);
+                $('#projectName').val('');
+                $('#projectDescription').val('');
+                window.setColorPickerValue('#projectColor', '#2E5DA6');
+                $('#projectStatus').val('0');
+            }
+
+            $('[data-bs-target="#projectModal"]').not('.edit-project-btn').on('click', function () {
+                resetProjectForm();
+            });
+
+            $('.edit-project-btn').on('click', function () {
+                $('#projectForm').attr('action', editAction);
+                $('#projectModalTitle').text('Edit Product');
+                $('#projectSubmitBtn').text('Save Changes');
+                $('#projectId').val($(this).data('id'));
+                $('#projectName').val($(this).data('name'));
+                $('#projectDescription').val($(this).data('description'));
+                window.setColorPickerValue('#projectColor', $(this).data('color'));
+                $('#projectStatus').val($(this).data('status'));
+            });
+
+            modalElement.addEventListener('hidden.bs.modal', function () {
+                resetProjectForm();
+            });
+        });
+    </script>
+}

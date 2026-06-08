@@ -1,0 +1,85 @@
+@using ScheduleApp.Models
+@model ScheduleEvent
+
+@{
+    // Define Color logic based on Status
+    var colorHex = Model.Status switch
+    {
+        EventStatus.Done => "#10B981",
+        EventStatus.Blocked => "#EF4444",
+        EventStatus.Cancelled => "#6B7280",
+        EventStatus.InProgress => "#3B82F6",
+        _ => "#6B7280"
+    };
+
+    // Use Category color if it overrides
+    if (Model.Category != null && !string.IsNullOrEmpty(Model.Category.Color)) {
+        colorHex = Model.Category.Color;
+    }
+
+    var isOverdue = Model.IsOverdue;
+}
+
+<div class="card card-soft mb-2 @(isOverdue ? "overdue-alert" : "")" 
+     style="--status-color: @colorHex; --status-color-rgb: @GetRgb(colorHex); background-color: rgba(var(--status-color-rgb), 0.04);"
+     data-event-modal-url="@Url.Action("Edit", "Events", new { id = Model.Id })"
+     data-event-modal-title="Edit Task"
+     role="button"
+     tabindex="0">
+    
+    <div class="card-body p-2">
+        <!-- Title & Status -->
+        <div class="d-flex justify-content-between align-items-start mb-1 gap-2">
+            <h6 class="event-card-title mb-0 fw-bold event-card-truncate">
+                @if (!string.IsNullOrEmpty(Model.Icon))
+                {
+                    <span class="me-1">@Model.Icon</span>
+                }
+                @Model.Title
+            </h6>
+        </div>
+        
+        <!-- Metadata -->
+        <div class="d-flex align-items-center justify-content-between mb-2 mt-1">
+            <div class="d-flex align-items-center gap-2">
+                <span class="event-card-meta">
+                    <i class="bi bi-clock me-1"></i> 
+                    @Model.EndDateTime.ToString("HH:mm")
+                </span>
+                @if (!string.IsNullOrEmpty(Model.Stage?.Name ?? Model.AreaName)) {
+                     <span class="event-area-tag">@(Model.Stage?.Name ?? Model.AreaName)</span>
+                }
+            </div>
+            @if (Model.Progress > 0 && Model.Status != EventStatus.Done) {
+                <span class="event-progress-label">@Model.Progress%</span>
+            }
+        </div>
+
+        <!-- Progress Bar -->
+        @if (Model.Progress > 0 && Model.Status != EventStatus.Done) {
+            <div class="progress" style="height: 3px; background-color: rgba(0,0,0,0.05);">
+                <div class="progress-bar" role="progressbar" 
+                     style="width: @Model.Progress%; background-color: var(--status-color);" 
+                     aria-valuenow="@Model.Progress" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        }
+        
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <p class="event-card-description event-card-truncate mt-2">@Model.Description</p>
+        }
+    </div>
+</div>
+
+@functions {
+    public string GetRgb(string hex) {
+        try {
+            hex = hex.Replace("#", "");
+            if (hex.Length == 3) hex = $"{hex[0]}{hex[0]}{hex[1]}{hex[1]}{hex[2]}{hex[2]}";
+            int r = int.Parse(hex.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+            int g = int.Parse(hex.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+            int b = int.Parse(hex.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+            return $"{r}, {g}, {b}";
+        } catch { return "107, 114, 128"; } // fallback text-muted
+    }
+}

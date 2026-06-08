@@ -1,0 +1,800 @@
+@model ScheduleApp.Models.ViewModels.DashboardViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["AppContentClass"] = "app-content-fixed";
+
+    var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    var projectProgressJson = JsonSerializer.Serialize(Model.ProjectProgress, jsonOptions);
+    var stageProgressJson = JsonSerializer.Serialize(Model.StageProgress, jsonOptions);
+    var statusBreakdownJson = JsonSerializer.Serialize(Model.StatusBreakdown, jsonOptions);
+    var priorityBreakdownJson = JsonSerializer.Serialize(Model.PriorityBreakdown, jsonOptions);
+}
+
+@section PageStyles {
+    <link rel="stylesheet" href="~/lib/gridstack/gridstack.min.css" asp-append-version="true" />
+}
+
+<div class="dashboard-shell h-100 d-flex flex-column gap-3">
+    <div class="dashboard-hero card border-0 shadow-sm">
+        <div class="card-body p-3">
+            <div class="dashboard-toolbar">
+                <div class="dashboard-heading">
+                    <div class="management-kicker">Daily Activity Hub</div>
+                    <h4 class="mb-0 fw-bold">Dashboard</h4>
+                </div>
+                <form method="get" class="dashboard-project-filter">
+                    <select class="form-select" name="projectId" onchange="this.form.submit()">
+                        @foreach (var project in Model.Projects)
+                        {
+                            <option value="@project.Id" selected="@(Model.SelectedProjectId == project.Id ? "selected" : null)">@project.Name</option>
+                        }
+                    </select>
+                </form>
+                <div class="dashboard-toolbar-actions">
+                    <div class="dropdown dashboard-edit-panel" id="dashboardEditPanel" hidden>
+                        <button class="btn btn-light icon-btn" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-label="Manage widgets">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end dashboard-widget-menu">
+                            <div class="dashboard-widget-menu-head">
+                                <span class="management-kicker">Widget Picker</span>
+                                <strong>Add or restore widgets</strong>
+                            </div>
+                            <div class="dashboard-widget-picker">
+                                <button class="btn btn-soft" type="button" data-add-widget="project-progress">Progress</button>
+                                <button class="btn btn-soft" type="button" data-add-widget="stage-progress">Stages</button>
+                                <button class="btn btn-soft" type="button" data-add-widget="status-breakdown">Status</button>
+                                <button class="btn btn-soft" type="button" data-add-widget="priority-focus">Priority</button>
+                                <button class="btn btn-soft" type="button" data-add-widget="upcoming-tasks">Upcoming</button>
+                                <button class="btn btn-soft" type="button" data-add-widget="todo-list">To-Do List</button>
+                                <button class="btn btn-soft" type="button" data-add-widget="quick-stats">Stats</button>
+                                <button class="btn btn-soft" type="button" data-add-widget="finance-summary">Finance</button>
+                                <button class="btn btn-soft" type="button" data-add-widget="next-hour-focus">Next Hour</button>
+                                <button class="btn btn-soft" type="button" data-add-widget="tomorrow-preview">Tomorrow</button>
+                                <button class="btn btn-soft" type="button" data-add-widget="upcoming-reminders">Reminders</button>
+                            </div>
+                            <div class="dashboard-widget-menu-foot">
+                                <button class="btn btn-light w-100" type="button" id="resetDashboardLayout">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Reset Layout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-light icon-btn" type="button" id="dashboardEditToggle" aria-label="Toggle dashboard edit mode" aria-pressed="false">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-stack dashboard-grid flex-grow-1"></div>
+</div>
+
+<template id="project-progress-template">
+    <div class="dashboard-widget-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex flex-column p-3">
+            <div class="dashboard-widget-header">
+                <div>
+                    <div class="management-kicker">Chart Widget</div>
+                    <h6 class="mb-0 fw-bold">Project Progress</h6>
+                </div>
+                <div class="dashboard-widget-actions">
+                    <div class="btn btn-white icon-btn grid-handle" aria-label="Drag widget" style="cursor: grab; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-arrows-move"></i>
+                    </div>
+                    <button class="btn btn-white icon-btn widget-remove" type="button" aria-label="Remove widget">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="dashboard-chart-wrap flex-grow-1">
+                <canvas class="widget-chart" data-chart-type="project-progress"></canvas>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="next-hour-focus-template">
+    <div class="dashboard-widget-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex flex-column p-3">
+            <div class="dashboard-widget-header">
+                <div>
+                    <div class="management-kicker">Proactive Assist</div>
+                    <h6 class="mb-0 fw-bold">Next Hour Focus</h6>
+                </div>
+                <div class="dashboard-widget-actions">
+                    <div class="btn btn-white icon-btn grid-handle" aria-label="Drag widget" style="cursor: grab; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-arrows-move"></i>
+                    </div>
+                    <button class="btn btn-white icon-btn widget-remove" type="button" aria-label="Remove widget">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="dashboard-list flex-grow-1">
+                @if (Model.NextHourFocus != null)
+                {
+                    <div class="dashboard-proactive-summary">@Model.NextHourFocus.Summary</div>
+                    @foreach (var item in Model.NextHourFocus.Items.Take(4))
+                    {
+                        <button class="dashboard-task-row" type="button" data-event-modal-url="@(item.TaskId.HasValue ? Url.Action("Edit", "Events", new { id = item.TaskId.Value }) : null)" data-event-modal-title="Edit Task">
+                            <span class="dashboard-task-dot" style="background-color: #2453A6"></span>
+                            <span class="flex-grow-1 text-start">
+                                <strong>@item.Title</strong>
+                                <small>@item.Detail</small>
+                            </span>
+                            <span class="badge text-bg-light border">@item.Status</span>
+                        </button>
+                    }
+                }
+                else
+                {
+                    <div class="dashboard-empty-note">Next-hour focus recommendations appear here for the current user.</div>
+                }
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="tomorrow-preview-template">
+    <div class="dashboard-widget-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex flex-column p-3">
+            <div class="dashboard-widget-header">
+                <div>
+                    <div class="management-kicker">Proactive Assist</div>
+                    <h6 class="mb-0 fw-bold">Tomorrow Preview</h6>
+                </div>
+                <div class="dashboard-widget-actions">
+                    <div class="btn btn-white icon-btn grid-handle" aria-label="Drag widget" style="cursor: grab; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-arrows-move"></i>
+                    </div>
+                    <button class="btn btn-white icon-btn widget-remove" type="button" aria-label="Remove widget">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="dashboard-list flex-grow-1">
+                @if (Model.TomorrowPreview != null)
+                {
+                    <div class="dashboard-proactive-summary">@Model.TomorrowPreview.Summary</div>
+                    @foreach (var item in Model.TomorrowPreview.Items.Take(4))
+                    {
+                        <button class="dashboard-task-row" type="button" data-event-modal-url="@(item.TaskId.HasValue ? Url.Action("Edit", "Events", new { id = item.TaskId.Value }) : null)" data-event-modal-title="Edit Task">
+                            <span class="dashboard-task-dot" style="background-color: #0EA5E9"></span>
+                            <span class="flex-grow-1 text-start">
+                                <strong>@item.Title</strong>
+                                <small>@item.Detail</small>
+                            </span>
+                            <span class="badge text-bg-light border">@item.Priority</span>
+                        </button>
+                    }
+                }
+                else
+                {
+                    <div class="dashboard-empty-note">Tomorrow recommendations appear here for the current user.</div>
+                }
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="upcoming-reminders-template">
+    <div class="dashboard-widget-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex flex-column p-3">
+            <div class="dashboard-widget-header">
+                <div>
+                    <div class="management-kicker">Notification Center</div>
+                    <h6 class="mb-0 fw-bold">Upcoming Reminders</h6>
+                </div>
+                <div class="dashboard-widget-actions">
+                    <div class="btn btn-white icon-btn grid-handle" aria-label="Drag widget" style="cursor: grab; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-arrows-move"></i>
+                    </div>
+                    <button class="btn btn-white icon-btn widget-remove" type="button" aria-label="Remove widget">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="dashboard-list flex-grow-1">
+                @if (Model.UpcomingReminders.Any())
+                {
+                    @foreach (var reminder in Model.UpcomingReminders.Take(6))
+                    {
+                        <a class="dashboard-task-row text-decoration-none" href="@(string.IsNullOrWhiteSpace(reminder.ActionUrl) ? "#" : reminder.ActionUrl)">
+                            <span class="dashboard-task-dot" style="background-color: #F59E0B"></span>
+                            <span class="flex-grow-1 text-start">
+                                <strong>@reminder.NotificationType</strong>
+                                <small>@reminder.Message</small>
+                            </span>
+                            <span class="badge text-bg-light border">@reminder.ScheduledForUtc.ToLocalTime().ToString("HH:mm")</span>
+                        </a>
+                    }
+                }
+                else
+                {
+                    <div class="dashboard-empty-note">No pending reminders are scheduled for the current user.</div>
+                }
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="status-breakdown-template">
+    <div class="dashboard-widget-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex flex-column p-3">
+            <div class="dashboard-widget-header">
+                <div>
+                    <div class="management-kicker">Chart Widget</div>
+                    <h6 class="mb-0 fw-bold">Task Status Mix</h6>
+                </div>
+                <div class="dashboard-widget-actions">
+                    <div class="btn btn-white icon-btn grid-handle" aria-label="Drag widget" style="cursor: grab; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-arrows-move"></i>
+                    </div>
+                    <button class="btn btn-white icon-btn widget-remove" type="button" aria-label="Remove widget">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="dashboard-chart-wrap flex-grow-1">
+                <canvas class="widget-chart" data-chart-type="status-breakdown"></canvas>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="priority-focus-template">
+    <div class="dashboard-widget-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex flex-column p-3">
+            <div class="dashboard-widget-header">
+                <div>
+                    <div class="management-kicker">Chart Widget</div>
+                    <h6 class="mb-0 fw-bold">Priority Focus</h6>
+                </div>
+                <div class="dashboard-widget-actions">
+                    <div class="btn btn-white icon-btn grid-handle" aria-label="Drag widget" style="cursor: grab; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-arrows-move"></i>
+                    </div>
+                    <button class="btn btn-white icon-btn widget-remove" type="button" aria-label="Remove widget">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="dashboard-chart-wrap flex-grow-1">
+                <canvas class="widget-chart" data-chart-type="priority-focus"></canvas>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="stage-progress-template">
+    <div class="dashboard-widget-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex flex-column p-3">
+            <div class="dashboard-widget-header">
+                <div>
+                    <div class="management-kicker">Stage Rollup</div>
+                    <h6 class="mb-0 fw-bold">@Model.SelectedProjectName Stages</h6>
+                </div>
+                <div class="dashboard-widget-actions">
+                    <div class="btn btn-white icon-btn grid-handle" aria-label="Drag widget" style="cursor: grab; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-arrows-move"></i>
+                    </div>
+                    <button class="btn btn-white icon-btn widget-remove" type="button" aria-label="Remove widget">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="dashboard-chart-wrap flex-grow-1">
+                @if (Model.StageProgress.Any())
+                {
+                    <canvas class="widget-chart" data-chart-type="stage-progress"></canvas>
+                }
+                else
+                {
+                    <div class="dashboard-empty-note">No stages found for this project yet. Assign stage names to tasks and they will roll up here.</div>
+                }
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="upcoming-tasks-template">
+    <div class="dashboard-widget-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex flex-column p-3">
+            <div class="dashboard-widget-header">
+                <div>
+                    <div class="management-kicker">Activity Widget</div>
+                    <h6 class="mb-0 fw-bold">Upcoming Tasks</h6>
+                </div>
+                <div class="dashboard-widget-actions">
+                    <div class="btn btn-white icon-btn grid-handle" aria-label="Drag widget" style="cursor: grab; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-arrows-move"></i>
+                    </div>
+                    <button class="btn btn-white icon-btn widget-remove" type="button" aria-label="Remove widget">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="dashboard-list flex-grow-1">
+                @if (Model.UpcomingTasks.Any())
+                {
+                    @foreach (var task in Model.UpcomingTasks)
+                    {
+                        <button class="dashboard-task-row" type="button" data-event-modal-url="@Url.Action("Edit", "Events", new { id = task.Id })" data-event-modal-title="Edit Task" style="@(task.IsCritical ? "background-color: #fef2f2; border-color: #fecaca;" : "")">
+                            <span class="dashboard-task-dot" style="background-color: @task.Color"></span>
+                            <span class="flex-grow-1 text-start">
+                                <strong>@(string.IsNullOrWhiteSpace(task.Icon) ? task.Title : $"{task.Icon} {task.Title}")</strong>
+                                <small>@task.TimeLabel</small>
+                            </span>
+                            <span class="badge @(task.IsCritical ? "text-bg-danger" : "text-bg-light border")">@task.Status</span>
+                        </button>
+                    }
+                }
+                else
+                {
+                    <div class="dashboard-empty-note">No open tasks are scheduled next. Add a new task to start tracking activity here.</div>
+                }
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="todo-list-template">
+    <div class="dashboard-widget-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex flex-column p-3">
+            <div class="dashboard-widget-header">
+                <div>
+                    <div class="management-kicker">Standalone Tracking</div>
+                    <h6 class="mb-0 fw-bold">To-Do List</h6>
+                </div>
+                <div class="dashboard-widget-actions">
+                    <div class="btn btn-white icon-btn grid-handle" aria-label="Drag widget" style="cursor: grab; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-arrows-move"></i>
+                    </div>
+                    <button class="btn btn-white icon-btn widget-remove" type="button" aria-label="Remove widget">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="dashboard-list flex-grow-1" id="todoListContainer">
+                @if (Model.ToDoTasks.Any())
+                {
+                    @foreach (var task in Model.ToDoTasks)
+                    {
+                        <div class="dashboard-task-row todo-task-row @(task.IsDone ? "todo-task-done" : "")" style="@(task.IsCritical ? "background-color: #fef2f2; border-color: #fecaca;" : "")">
+                            <div class="form-check m-0 px-2 d-flex align-items-center">
+                                <input class="form-check-input todo-checkbox" type="checkbox" data-task-id="@task.Id" @(task.IsDone ? "checked" : "") style="transform: scale(1.3); cursor: pointer; border-color: @task.Color;" />
+                            </div>
+                            <button class="flex-grow-1 text-start bg-transparent border-0 text-decoration-none todo-task-btn" type="button" data-event-modal-url="@Url.Action("Edit", "Events", new { id = task.Id })" data-event-modal-title="Edit Task">
+                                <strong class="todo-title @(task.IsDone ? "text-decoration-line-through text-muted" : "")">
+                                    @(string.IsNullOrWhiteSpace(task.Icon) ? task.Title : $"{task.Icon} {task.Title}")
+                                </strong>
+                                <small class="d-block @(task.IsDone ? "text-decoration-line-through text-muted" : "")">@task.TimeLabel</small>
+                            </button>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="dashboard-empty-note">No standalone to-do items currently tracked. Check 'Track in standalone To-Do List' when creating a task.</div>
+                }
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="quick-stats-template">
+    <div class="dashboard-widget-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex flex-column p-3">
+            <div class="dashboard-widget-header">
+                <div>
+                    <div class="management-kicker">Summary Widget</div>
+                    <h6 class="mb-0 fw-bold">Quick Stats</h6>
+                </div>
+                <div class="dashboard-widget-actions">
+                    <div class="btn btn-white icon-btn grid-handle" aria-label="Drag widget" style="cursor: grab; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-arrows-move"></i>
+                    </div>
+                    <button class="btn btn-white icon-btn widget-remove" type="button" aria-label="Remove widget">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="row g-2 flex-grow-1">
+                <div class="col-6">
+                    <div class="dashboard-stat-card">
+                        <span>Active Projects</span>
+                        <strong>@Model.ActiveProjects</strong>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="dashboard-stat-card">
+                        <span>Open Tasks</span>
+                        <strong>@Model.OpenTasks</strong>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="dashboard-stat-card">
+                        <span>Done Today</span>
+                        <strong>@Model.CompletedToday</strong>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="dashboard-stat-card dashboard-stat-alert">
+                        <span>Overdue</span>
+                        <strong>@Model.OverdueTasks</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="finance-summary-template">
+    <div class="dashboard-widget-card card border-0 shadow-sm h-100">
+        <div class="card-body d-flex flex-column p-3">
+            <div class="dashboard-widget-header">
+                <div>
+                    <div class="management-kicker">Finance Monitor</div>
+                    <h6 class="mb-0 fw-bold">Finance Summary</h6>
+                </div>
+                <div class="dashboard-widget-actions">
+                    <div class="btn btn-white icon-btn grid-handle" aria-label="Drag widget" style="cursor: grab; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-arrows-move"></i>
+                    </div>
+                    <button class="btn btn-white icon-btn widget-remove" type="button" aria-label="Remove widget">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="row g-2 flex-grow-1">
+                <div class="col-6">
+                    <div class="dashboard-stat-card">
+                        <span>Income</span>
+                        <strong>@(Model.FinanceSummary?.MonthlyIncome.ToString("C") ?? "$0.00")</strong>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="dashboard-stat-card">
+                        <span>Expense</span>
+                        <strong>@(Model.FinanceSummary?.MonthlyExpense.ToString("C") ?? "$0.00")</strong>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="dashboard-stat-card">
+                        <span>Net</span>
+                        <strong>@(Model.FinanceSummary?.Net.ToString("C") ?? "$0.00")</strong>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="dashboard-stat-card dashboard-stat-alert">
+                        <span>Warnings</span>
+                        <strong>@(Model.FinanceSummary?.BudgetWarningCount ?? 0)</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="small text-muted mt-3">
+                Next bill:
+                <strong>@(Model.FinanceSummary?.NextUpcomingBill?.Name ?? "None")</strong>
+                @if (Model.FinanceSummary?.NextUpcomingBill != null)
+                {
+                    <span> - @Model.FinanceSummary.NextUpcomingBill.NextDueDate.ToString("yyyy-MM-dd")</span>
+                }
+            </div>
+        </div>
+    </div>
+</template>
+
+@section Scripts {
+    <script src="~/lib/gridstack/gridstack-all.js" asp-append-version="true"></script>
+    <script src="~/lib/chartjs/chart.umd.min.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const storageKey = 'progress-dashboard-layout-v3';
+            const editModeKey = 'progress-dashboard-edit-mode';
+            const projectProgress = @Html.Raw(projectProgressJson);
+            const stageProgress = @Html.Raw(stageProgressJson);
+            const statusBreakdown = @Html.Raw(statusBreakdownJson);
+            const priorityBreakdown = @Html.Raw(priorityBreakdownJson);
+            const charts = new Map();
+            const dashboardShell = document.querySelector('.dashboard-shell');
+            const dashboardEditPanel = document.getElementById('dashboardEditPanel');
+            const dashboardEditToggle = document.getElementById('dashboardEditToggle');
+
+            GridStack.renderCB = function (el, widget) {
+                el.innerHTML = widget.content || '';
+            };
+
+            const defaultLayout = [
+                { id: 'project-progress', x: 0, y: 0, w: 6, h: 4 },
+                { id: 'status-breakdown', x: 6, y: 0, w: 4, h: 4 },
+                { id: 'priority-focus', x: 0, y: 4, w: 4, h: 4 },
+                { id: 'quick-stats', x: 4, y: 4, w: 4, h: 3 },
+                { id: 'finance-summary', x: 8, y: 4, w: 4, h: 3 }
+            ];
+
+            const grid = GridStack.init({
+                margin: 8,
+                float: true,
+                cellHeight: 80,
+                minRow: 1,
+                handle: '.grid-handle'
+            }, '.dashboard-grid');
+
+            let isEditMode = localStorage.getItem(editModeKey) === 'true';
+
+            function applyEditMode() {
+                dashboardShell?.classList.toggle('dashboard-editing', isEditMode);
+                dashboardEditPanel.hidden = !isEditMode;
+                dashboardEditToggle.classList.toggle('active', isEditMode);
+                dashboardEditToggle.setAttribute('aria-pressed', isEditMode ? 'true' : 'false');
+                grid.setStatic(!isEditMode);
+            }
+
+            function updateWidgetPickerState() {
+                const activeIds = new Set(getCurrentIds());
+                document.querySelectorAll('[data-add-widget]').forEach(button => {
+                    const isActive = activeIds.has(button.dataset.addWidget);
+                    button.classList.toggle('active', isActive);
+                    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                });
+            }
+
+            function getWidgetLayout() {
+                const saved = localStorage.getItem(storageKey);
+                if (!saved) return defaultLayout;
+                try {
+                    return JSON.parse(saved);
+                } catch {
+                    return defaultLayout;
+                }
+            }
+
+            function saveLayout() {
+                const layout = grid.save(false).map(node => ({
+                    id: node.id,
+                    x: node.x,
+                    y: node.y,
+                    w: node.w,
+                    h: node.h
+                }));
+                localStorage.setItem(storageKey, JSON.stringify(layout));
+                updateWidgetPickerState();
+            }
+
+            function createChart(canvas, type) {
+                if (!canvas || charts.has(canvas)) return;
+                const ctx = canvas.getContext('2d');
+
+                if (type === 'project-progress') {
+                    charts.set(canvas, new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: projectProgress.map(item => item.name),
+                            datasets: [{
+                                label: 'Completion %',
+                                data: projectProgress.map(item => item.progress),
+                                backgroundColor: projectProgress.map(item => item.color + 'CC'),
+                                borderColor: projectProgress.map(item => item.color),
+                                borderWidth: 1,
+                                borderRadius: 10,
+                                maxBarThickness: 34
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: { grid: { display: false } },
+                                y: { beginAtZero: true, max: 100 }
+                            }
+                        }
+                    }));
+                    return;
+                }
+
+                if (type === 'status-breakdown') {
+                    charts.set(canvas, new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: statusBreakdown.map(item => item.label),
+                            datasets: [{
+                                data: statusBreakdown.map(item => item.count),
+                                backgroundColor: ['#94A3B8', '#3B82F6', '#10B981', '#6B7280', '#EF4444'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '68%',
+                            plugins: {
+                                legend: { position: 'bottom' }
+                            }
+                        }
+                    }));
+                    return;
+                }
+
+                if (type === 'stage-progress') {
+                    charts.set(canvas, new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: stageProgress.map(item => item.name),
+                            datasets: [{
+                                label: 'Stage Progress %',
+                                data: stageProgress.map(item => item.progress),
+                                backgroundColor: stageProgress.map(item => item.color + 'CC'),
+                                borderColor: stageProgress.map(item => item.color),
+                                borderWidth: 1,
+                                borderRadius: 10,
+                                maxBarThickness: 28
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: { beginAtZero: true, max: 100, grid: { color: 'rgba(148, 163, 184, 0.18)' } },
+                                y: { grid: { display: false } }
+                            }
+                        }
+                    }));
+                    return;
+                }
+
+                if (type === 'priority-focus') {
+                    charts.set(canvas, new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: priorityBreakdown.map(item => item.label),
+                            datasets: [{
+                                label: 'Open Tasks',
+                                data: priorityBreakdown.map(item => item.count),
+                                backgroundColor: ['#CBD5E1', '#60A5FA', '#F59E0B', '#DC2626'],
+                                borderRadius: 10,
+                                borderWidth: 0,
+                                maxBarThickness: 34
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: { grid: { display: false } },
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    }));
+                }
+            }
+
+            function mountWidget(node) {
+                const template = document.getElementById(`${node.id}-template`);
+                if (!template) return;
+
+                const content = template.content.firstElementChild.cloneNode(true);
+                const widget = grid.addWidget({
+                    id: node.id,
+                    x: node.x,
+                    y: node.y,
+                    w: node.w,
+                    h: node.h,
+                    content: content.outerHTML
+                });
+
+                const removeButton = widget.querySelector('.widget-remove');
+                if (removeButton) {
+                    removeButton.addEventListener('click', function () {
+                        if (!isEditMode) {
+                            return;
+                        }
+
+                        const canvas = widget.querySelector('canvas');
+                        if (canvas && charts.has(canvas)) {
+                            charts.get(canvas).destroy();
+                            charts.delete(canvas);
+                        }
+                        grid.removeWidget(widget);
+                        saveLayout();
+                    });
+                }
+
+                const canvas = widget.querySelector('canvas[data-chart-type]');
+                if (canvas) {
+                    createChart(canvas, canvas.dataset.chartType);
+                }
+            }
+
+            function renderLayout(layout) {
+                grid.removeAll(true, false);
+                charts.forEach(chart => chart.destroy());
+                charts.clear();
+
+                layout.forEach(mountWidget);
+                saveLayout();
+            }
+
+            function getCurrentIds() {
+                return grid.save(false).map(node => node.id);
+            }
+
+            dashboardEditToggle?.addEventListener('click', function () {
+                isEditMode = !isEditMode;
+                localStorage.setItem(editModeKey, isEditMode ? 'true' : 'false');
+                applyEditMode();
+            });
+
+            document.querySelectorAll('[data-add-widget]').forEach(button => {
+                button.addEventListener('click', function () {
+                    if (!isEditMode) {
+                        return;
+                    }
+
+                    const id = this.dataset.addWidget;
+                    if (getCurrentIds().includes(id)) {
+                        return;
+                    }
+
+                    const node = defaultLayout.find(item => item.id === id) || { id, x: 0, y: 99, w: 4, h: 4 };
+                    mountWidget(node);
+                    saveLayout();
+                });
+            });
+
+            document.getElementById('resetDashboardLayout')?.addEventListener('click', function () {
+                localStorage.removeItem(storageKey);
+                renderLayout(defaultLayout);
+            });
+
+            grid.on('change removed added', function () {
+                saveLayout();
+            });
+
+            renderLayout(getWidgetLayout());
+            applyEditMode();
+            updateWidgetPickerState();
+
+            window.refreshCalendarEvents = null;
+
+            document.addEventListener('change', async function(e) {
+                if (e.target && e.target.classList.contains('todo-checkbox')) {
+                    const taskId = e.target.dataset.taskId;
+                    const isChecked = e.target.checked;
+                    const row = e.target.closest('.todo-task-row');
+                    const titles = row.querySelectorAll('.todo-title, small');
+                    
+                    if (isChecked) {
+                        row.classList.add('todo-task-done');
+                        titles.forEach(el => el.classList.add('text-decoration-line-through', 'text-muted'));
+                    } else {
+                        row.classList.remove('todo-task-done');
+                        titles.forEach(el => el.classList.remove('text-decoration-line-through', 'text-muted'));
+                    }
+
+                    try {
+                        const newStatus = isChecked ? 'Done' : 'Todo';
+                        const updateStatusUrl = '@Html.Raw(Url.Action("UpdateStatus", "Events"))';
+                        await fetch(`${updateStatusUrl}?id=${encodeURIComponent(taskId)}&status=${encodeURIComponent(newStatus)}`, { method: 'POST' });
+                    } catch (error) {
+                        console.error('Failed to update task status:', error);
+                        // Revert on error
+                        e.target.checked = !isChecked;
+                    }
+                }
+            });
+        });
+    </script>
+}

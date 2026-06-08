@@ -1,0 +1,194 @@
+@model ScheduleApp.Models.ViewModels.EventFormViewModel
+@{
+    var isEdit = Model.Id > 0;
+    var isModal = ViewBag.IsModal is bool modal && modal;
+    var formTitle = isEdit ? "Update Task" : "Create Task";
+    var stageOptions = (IEnumerable<ScheduleApp.Models.ProjectStage>)(ViewBag.ProjectStages ?? Enumerable.Empty<ScheduleApp.Models.ProjectStage>());
+    var selectedStageId = (int?)ViewBag.SelectedStageId ?? Model.StageId;
+    var presetIcons = new[]
+    {
+        "&#x1F680;", "&#x1F4C5;", "&#x1F4CA;", "&#x1F3AF;", "&#x1F4BB;", "&#x1F9EA;", "&#x2699;&#xFE0F;", "&#x1F4DD;", "&#x1F4CC;", "&#x1F4E2;",
+        "&#x1F3A8;", "&#x1F527;", "&#x1F4A1;", "&#x1F50D;", "&#x1F512;", "&#x1F6E0;&#xFE0F;", "&#x1F4E6;", "&#x1F4B3;", "&#x1F4DE;", "&#x1F465;",
+        "&#x1F91D;", "&#x1F4AC;", "&#x1F4E7;", "&#x2705;", "&#x26A0;&#xFE0F;", "&#x274C;", "&#x23F3;", "&#x1F551;", "&#x1F4C8;", "&#x1F4C9;",
+        "&#x1F4B0;", "&#x1F4B8;", "&#x1F3E2;", "&#x1F3D7;&#xFE0F;", "&#x1F4A7;", "&#x1F50C;", "&#x1F6A7;", "&#x1F9F1;", "&#x1F4DA;", "&#x1F393;",
+        "&#x1F9E0;", "&#x1F4F1;", "&#x1F310;", "&#x1F5A5;&#xFE0F;", "&#x1F5C2;&#xFE0F;", "&#x1F4C1;", "&#x1F5D3;&#xFE0F;", "&#x1F6A9;", "&#x1F3C1;", "&#x1F3C6;",
+        "&#x2B50;", "&#x1F525;", "&#x1F31F;", "&#x1F984;", "&#x1F916;", "&#x1F6F8;", "&#x1F69A;", "&#x1F6F3;&#xFE0F;", "&#x2708;&#xFE0F;", "&#x1F4CD;"
+    };
+}
+
+<div class="event-form-shell @(isModal ? "event-form-modal" : "event-form-page")">
+    <div class="card border-0 shadow-lg event-form-card">
+        <div class="card-body p-4 p-lg-5">
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+                @if (isEdit && Model.Progress == 100)
+                {
+                    <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">Completed</span>
+                }
+            </div>
+
+            <form asp-action="@(isEdit ? "Edit" : "Create")" method="post" class="event-modal-form" id="eventEditorForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="modal" value="@(isModal ? "1" : "0")" />
+                @if (isEdit)
+                {
+                    <input type="hidden" asp-for="Id" />
+                }
+
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label section-label">Task name</label>
+                    <input asp-for="Title" class="form-control form-control-lg fw-bold" placeholder="e.g. API integration rollout" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label section-label">Notes</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="Short task details and context"></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="ProjectId" class="form-label section-label">Project</label>
+                        <select asp-for="ProjectId" asp-items="ViewBag.Projects" class="form-select" id="eventProjectId">
+                            <option value="">Standalone task</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="StageId" class="form-label section-label">Stage</label>
+                        <select asp-for="StageId" class="form-select" id="eventStageId">
+                            <option value="">Select stage</option>
+                            @foreach (var stage in stageOptions)
+                            {
+                                <option value="@stage.Id" selected="@(selectedStageId == stage.Id ? "selected" : null)">
+                                    @stage.Name
+                                </option>
+                            }
+                        </select>
+                        <div class="form-text">Manage stage lists from Meta data.</div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="StartDateTime" class="form-label section-label">Start</label>
+                        <input asp-for="StartDateTime" class="form-control" type="datetime-local" />
+                        <span asp-validation-for="StartDateTime" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="EndDateTime" class="form-label section-label">End</label>
+                        <input asp-for="EndDateTime" class="form-control" type="datetime-local" />
+                        <span asp-validation-for="EndDateTime" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="CategoryId" class="form-label section-label">Category</label>
+                        <select asp-for="CategoryId" asp-items="ViewBag.Categories" class="form-select">
+                            <option value="">Select category</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="DependsOnId" class="form-label section-label">Depends on</label>
+                        <select asp-for="DependsOnId" asp-items="ViewBag.AllEvents" class="form-select">
+                            <option value="">No dependency</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label asp-for="Priority" class="form-label section-label">Priority</label>
+                        <select asp-for="Priority" asp-items="Html.GetEnumSelectList<ScheduleApp.Models.EventPriority>()" class="form-select"></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Status" class="form-label section-label">Status</label>
+                        <select asp-for="Status" asp-items="Html.GetEnumSelectList<ScheduleApp.Models.EventStatus>()" class="form-select"></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Icon" class="form-label section-label">Icon</label>
+                        <div class="input-group">
+                            <input asp-for="Icon" class="form-control" placeholder="e.g. icon" />
+                            <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Pick</button>
+                            <div class="dropdown-menu dropdown-menu-end p-3 event-emoji-picker">
+                                @foreach (var icon in presetIcons)
+                                {
+                                    <button class="emoji-opt" type="button">@Html.Raw(icon)</button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3 align-items-end">
+                    <div class="col-md-7">
+                        <label asp-for="Progress" class="form-label section-label">Progress <span class="text-primary">@Model.Progress%</span></label>
+                        <input type="range" asp-for="Progress" class="form-range" min="0" max="100" step="5">
+                    </div>
+                    <div class="col-md-5">
+                        <div class="form-check event-check mb-2">
+                            <input asp-for="IsAllDay" class="form-check-input" type="checkbox" />
+                            <label class="form-check-label fw-semibold" asp-for="IsAllDay">All day task</label>
+                        </div>
+                        <div class="form-check event-check" id="todoListCheckWrapper">
+                            <input asp-for="IsTodoListTask" class="form-check-input" type="checkbox" />
+                            <label class="form-check-label fw-semibold" asp-for="IsTodoListTask">Track in standalone To-Do List</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center gap-3 pt-4 border-top flex-wrap">
+                    <div class="d-flex gap-2">
+                        @if (isEdit)
+                        {
+                            <button type="submit" class="btn btn-outline-danger" form="eventDeleteForm" data-confirm="Delete this task permanently?">Delete</button>
+                        }
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap justify-content-end">
+                        @if (isModal)
+                        {
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        }
+                        else
+                        {
+                            <a href="javascript:history.back()" class="btn btn-light">Cancel</a>
+                        }
+
+                        <button type="submit" class="btn btn-primary px-4">
+                            @(isEdit ? "Save changes" : "Create task")
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            @if (isEdit)
+            {
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="event-modal-delete-form d-none" id="eventDeleteForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="modal" value="@(isModal ? "1" : "0")" />
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const projectSelect = document.getElementById('eventProjectId');
+        
+        function syncTodoVisibility() {
+            if (!projectSelect) return;
+            const selectedProjectId = projectSelect.value;
+            const todoListCheckWrapper = document.getElementById('todoListCheckWrapper');
+            if (todoListCheckWrapper) {
+                todoListCheckWrapper.style.display = selectedProjectId ? 'none' : 'block';
+            }
+        }
+
+        if (projectSelect) {
+            projectSelect.addEventListener('change', syncTodoVisibility);
+            syncTodoVisibility();
+        }
+    })();
+</script>

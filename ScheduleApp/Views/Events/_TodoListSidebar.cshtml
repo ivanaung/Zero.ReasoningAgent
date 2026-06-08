@@ -1,0 +1,84 @@
+@using ScheduleApp.Models.ViewModels
+@model IReadOnlyList<AgendaItemViewModel>
+
+<div class="card border-0 shadow-sm mt-3 flex-grow-1 d-flex flex-column calendar-todo-card">
+    <div class="card-body p-3 d-flex flex-column h-100">
+        <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-ui-checks me-2 text-primary"></i>
+            <h6 class="mb-0 fw-bold">To-Do List</h6>
+        </div>
+
+        <div class="dashboard-list flex-grow-1 overflow-auto pe-1" id="calendarTodoListContainer">
+            @if (Model.Any())
+            {
+                @foreach (var task in Model)
+                {
+                    <div class="dashboard-task-row todo-task-row d-flex align-items-start gap-2 p-2 w-100 border-0 bg-transparent text-start rounded @(task.IsDone ? "todo-task-done" : "")"
+                         style="transition: background-color 0.15s ease; @(task.IsCritical ? "background-color: #fef2f2;" : "")"
+                         onmouseover="this.style.backgroundColor='@(task.IsCritical ? "#fecaca" : "#f8f9fa")'"
+                         onmouseout="this.style.backgroundColor='@(task.IsCritical ? "#fef2f2" : "transparent")'">
+                        
+                        <div class="form-check m-0 d-flex align-items-center mt-1">
+                            <input class="form-check-input todo-checkbox" type="checkbox" data-task-id="@task.Id" @(task.IsDone ? "checked" : "") style="transform: scale(1.2); cursor: pointer; border-color: @task.Color;" />
+                        </div>
+                        
+                        <button class="flex-grow-1 text-start bg-transparent border-0 text-decoration-none min-w-0" type="button" 
+                                style="line-height: 1.2;"
+                                data-event-modal-url="@Url.Action("Edit", "Events", new { id = task.Id })" 
+                                data-event-modal-title="Edit Task"
+                                onclick="window.openEventModal(this.dataset.eventModalUrl, this.dataset.eventModalTitle)">
+                            <div class="fw-bold text-truncate todo-title @(task.IsDone ? "text-decoration-line-through text-muted" : "text-dark")" style="font-size: 0.85rem;">
+                                @(string.IsNullOrWhiteSpace(task.Icon) ? task.Title : $"{task.Icon} {task.Title}")
+                            </div>
+                            <div class="todo-time @(task.IsDone ? "text-decoration-line-through text-muted" : "text-muted")" style="font-size: 0.75rem;">@task.TimeLabel</div>
+                        </button>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-muted small italic">No standalone to-do items currently tracked.</div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Find checkboxes recursively in case they are loaded dynamically
+        document.addEventListener('change', async function(e) {
+            if (e.target && e.target.classList.contains('todo-checkbox')) {
+                const taskId = e.target.dataset.taskId;
+                const isChecked = e.target.checked;
+                const row = e.target.closest('.todo-task-row');
+                const title = row.querySelector('.todo-title');
+                const timeStr = row.querySelector('.todo-time');
+                
+                if (isChecked) {
+                    row.classList.add('todo-task-done');
+                    if (title) title.classList.add('text-decoration-line-through', 'text-muted');
+                    if (title) title.classList.remove('text-dark');
+                    if (timeStr) timeStr.classList.add('text-decoration-line-through');
+                } else {
+                    row.classList.remove('todo-task-done');
+                    if (title) title.classList.remove('text-decoration-line-through', 'text-muted');
+                    if (title) title.classList.add('text-dark');
+                    if (timeStr) timeStr.classList.remove('text-decoration-line-through');
+                }
+
+                try {
+                    const newStatus = isChecked ? 'Done' : 'Todo';
+                    const updateStatusUrl = '@Html.Raw(Url.Action("UpdateStatus", "Events"))';
+                    await fetch(`${updateStatusUrl}?id=${encodeURIComponent(taskId)}&status=${encodeURIComponent(newStatus)}`, { method: 'POST' });
+                    // Refresh calendar globally if available
+                    if (window.refreshCalendarEvents) {
+                        window.refreshCalendarEvents();
+                    }
+                } catch (error) {
+                    console.error('Failed to update task status:', error);
+                    e.target.checked = !isChecked; // Revert
+                }
+            }
+        });
+    });
+</script>

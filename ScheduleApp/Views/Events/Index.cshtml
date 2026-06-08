@@ -1,0 +1,103 @@
+@model DateTime
+@using ScheduleApp.Models.ViewModels
+@{
+    ViewData["Title"] = "Calendar";
+    ViewData["AppContentClass"] = "app-content-fixed";
+    var initialDate = (string)(ViewBag.InitialDate ?? DateTime.Today.ToString("yyyy-MM-dd"));
+    var initialView = (string)(ViewBag.InitialView ?? "dayGridMonth");
+}
+
+<div class="calendar-workspace h-100 d-flex gap-3">
+    <aside class="calendar-sidebar">
+        <partial name="_MiniMonthSidebar" model="Model" view-data='new ViewDataDictionary(ViewData) { ["MiniCalendarAction"] = "Index", ["MiniCalendarView"] = initialView }' />
+
+        @{
+            var upcomingEvents = (ViewBag.UpcomingEvents as List<AgendaItemViewModel>) ?? new List<AgendaItemViewModel>();
+            var todoTasks = (ViewBag.ToDoTasks as List<AgendaItemViewModel>) ?? new List<AgendaItemViewModel>();
+        }
+        @if (upcomingEvents != null)
+        {
+            <partial name="_UpcomingTasksSidebar" model="upcomingEvents" />
+        }
+        @if (todoTasks != null)
+        {
+            <partial name="_TodoListSidebar" model="todoTasks" />
+        }
+    </aside>
+
+    <section id="calendar-shell" class="calendar-main-shell flex-grow-1 min-h-0 d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="segmented-control">
+                    <a asp-action="Index" asp-route-date="@Model.ToString("yyyy-MM-dd")" asp-route-view="dayGridMonth" class="btn @(initialView == "dayGridMonth" ? "active" : "")">Month</a>
+                    <a asp-action="Index" asp-route-date="@Model.ToString("yyyy-MM-dd")" asp-route-view="timeGridWeek" class="btn @(initialView == "timeGridWeek" ? "active" : "")">Week</a>
+                    <a asp-action="Day" asp-route-date="@Model.ToString("yyyy-MM-dd")" class="btn">Day</a>
+                </div>
+                <h5 class="mb-0 fw-bold ms-2">@Model.ToString("MMMM yyyy")</h5>
+            </div>
+        </div>
+
+        <div id="calendar"></div>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/lib/fullcalendar/index.global.min.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const calendarElement = document.getElementById('calendar');
+            if (!calendarElement) {
+                return;
+            }
+
+            const calendar = new FullCalendar.Calendar(calendarElement, {
+                initialView: '@initialView',
+                initialDate: '@initialDate',
+                height: '100%',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: ''
+                },
+                navLinks: true,
+                nowIndicator: true,
+                editable: false,
+                dayMaxEvents: true,
+                eventDisplay: 'block',
+                events: '@Url.Action("JsonList", "Events")',
+                dateClick: function (info) {
+                    const dayUrl = '@Html.Raw(Url.Action("Day", "Events"))';
+                    window.location.href = dayUrl + '?date=' + encodeURIComponent(info.dateStr);
+                },
+                eventClick: function (info) {
+                    info.jsEvent.preventDefault();
+                    if (info.event.extendedProps.source === 'google-calendar') {
+                        const link = info.event.extendedProps.htmlLink;
+                        if (link) {
+                            window.open(link, '_blank', 'noopener');
+                        }
+                        return;
+                    }
+
+                    const editBaseUrl = '@Html.Raw(Url.Action("Edit", "Events", new { id = "__eventId__" }))';
+                    window.openEventModal(editBaseUrl.replace('__eventId__', encodeURIComponent(info.event.id)), 'Edit Task');
+                },
+                datesSet: function (info) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('date', info.startStr.slice(0, 10));
+                    url.searchParams.set('view', info.view.type);
+                    window.history.replaceState({}, '', url);
+                },
+                eventContent: function (arg) {
+                    const icon = arg.event.extendedProps.icon ? `<span class="event-dot" style="background:${arg.event.extendedProps.dotColor || arg.event.backgroundColor || arg.event.borderColor || '#2E5DA6'}"></span><span class="compact-event-title">${arg.event.extendedProps.icon} ${arg.event.title}</span>` : `<span class="event-dot" style="background:${arg.event.extendedProps.dotColor || arg.event.backgroundColor || arg.event.borderColor || '#2E5DA6'}"></span><span class="compact-event-title">${arg.event.title}</span>`;
+                    return { html: `<div class="compact-event d-flex align-items-center gap-2">${icon}</div>` };
+                }
+            });
+
+            calendar.render();
+            window.refreshCalendarEvents = function () {
+                calendar.refetchEvents();
+            };
+        });
+    </script>
+}

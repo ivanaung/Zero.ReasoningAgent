@@ -1,0 +1,124 @@
+@model ScheduleApp.Models.ViewModels.DayViewModel
+@using ScheduleApp.Models.ViewModels
+@{
+    ViewData["Title"] = $"Schedule - {Model.Date:dd MMM}";
+    ViewData["AppContentClass"] = "app-content-fixed";
+    bool showFullDay = ViewBag.ShowFullDay ?? false;
+    var upcomingEvents = (ViewBag.UpcomingEvents as List<AgendaItemViewModel>) ?? new List<AgendaItemViewModel>();
+    
+    TimeSpan startTime = TimeSpan.Parse(ViewBag.StartTime ?? "08:00");
+    TimeSpan endTime = TimeSpan.Parse(ViewBag.EndTime ?? "20:00");
+
+    if (showFullDay)
+    {
+        startTime = TimeSpan.Zero;
+        endTime = new TimeSpan(23, 30, 0);
+    }
+}
+
+<div class="day-view-shell h-100 d-flex flex-column">
+    <div class="calendar-workspace flex-grow-1 d-flex gap-3 min-h-0">
+        <aside class="calendar-sidebar">
+            <partial name="_MiniMonthSidebar" model="Model.Date" view-data='new ViewDataDictionary(ViewData) { ["MiniCalendarAction"] = "Day" }' />
+            <partial name="_UpcomingTasksSidebar" model="upcomingEvents" />
+            
+            @{
+                var todoTasks = (ViewBag.ToDoTasks as List<AgendaItemViewModel>) ?? new List<AgendaItemViewModel>();
+            }
+            @if (todoTasks != null)
+            {
+                <partial name="_TodoListSidebar" model="todoTasks" />
+            }
+        </aside>
+
+        <div class="day-view-content flex-grow-1 d-flex flex-column min-h-0">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="segmented-control">
+                        <a asp-action="Day" asp-route-date="@Model.Date.AddDays(-1).ToString("yyyy-MM-dd")" class="btn" aria-label="Previous day">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                        <a asp-action="Day" asp-route-date="@DateTime.Today.ToString("yyyy-MM-dd")" class="btn active">Today</a>
+                        <a asp-action="Day" asp-route-date="@Model.Date.AddDays(1).ToString("yyyy-MM-dd")" class="btn" aria-label="Next day">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="segmented-control">
+                        <a asp-action="Index" asp-route-date="@Model.Date.ToString("yyyy-MM-dd")" asp-route-view="dayGridMonth" class="btn">Month</a>
+                        <a asp-action="Index" asp-route-date="@Model.Date.ToString("yyyy-MM-dd")" asp-route-view="timeGridWeek" class="btn">Week</a>
+                        <a asp-action="Day" asp-route-date="@Model.Date.ToString("yyyy-MM-dd")" class="btn active">Day</a>
+                    </div>
+
+                    <h5 class="mb-0 fw-bold ms-2">@Model.Date.ToString("dddd, MMMM dd")</h5>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    @if (!showFullDay)
+                    {
+                        <a asp-action="Day" asp-route-date="@Model.Date.ToString("yyyy-MM-dd")" asp-route-showFullDay="true" class="btn btn-light">
+                            <i class="bi bi-eye-fill me-1"></i> Show Full Day
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-action="Day" asp-route-date="@Model.Date.ToString("yyyy-MM-dd")" asp-route-showFullDay="false" class="btn btn-light">
+                            <i class="bi bi-eye-slash-fill me-1"></i> Focus Mode
+                        </a>
+                    }
+                    <a asp-action="Index" asp-route-date="@Model.Date.ToString("yyyy-MM-dd")" asp-route-view="dayGridMonth" class="btn btn-outline-primary">
+                        <i class="bi bi-calendar3"></i> Back to Calendar
+                    </a>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 day-view-card flex-grow-1 d-flex flex-column">
+                <div class="card mb-3 border-0 shadow-sm overflow-hidden flex-shrink-0">
+                <div class="bg-light px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
+                    <span class="text-uppercase small fw-bold text-muted" style="letter-spacing:0.05em;">All-Day & Reminders</span>
+                    <span class="badge bg-white text-muted border fw-normal">@Model.Events.Count(e => e.IsAllDay) Events</span>
+                </div>
+                <div class="p-2 d-flex flex-wrap gap-2 bg-white" style="min-height: 50px;">
+                    @foreach (var evt in Model.Events.Where(e => e.IsAllDay))
+                    {
+                        <partial name="_EventCard" model="evt" />
+                    }
+                    @if (!Model.Events.Any(e => e.IsAllDay))
+                    {
+                        <div class="text-muted small p-2 w-100 italic">No all-day events scheduled for today.</div>
+                    }
+                </div>
+            </div>
+
+                <div class="card shadow-sm border-0 overflow-hidden flex-grow-1 d-flex flex-column min-h-0">
+                    @{ bool isWeekend = Model.Date.DayOfWeek == DayOfWeek.Saturday || Model.Date.DayOfWeek == DayOfWeek.Sunday; }
+                    <div class="day-grid-scroll flex-grow-1 min-h-0 overflow-auto">
+                        <div class="day-grid-container @(isWeekend ? "is-weekend" : "")" style="background-color: white;">
+                            @for (var time = startTime; time <= endTime; time = time.Add(TimeSpan.FromMinutes(30)))
+                            {
+                                var timeEvents = Model.Events.Where(e => !e.IsAllDay &&
+                                    e.StartDateTime.TimeOfDay >= time &&
+                                    e.StartDateTime.TimeOfDay < time.Add(TimeSpan.FromMinutes(30))).ToList();
+
+                                <div class="d-flex border-bottom hour-row" style="min-height: 50px;">
+                                    <div class="p-2 text-muted text-end fw-medium bg-light border-end d-flex flex-column justify-content-start @(time.Minutes == 30 ? "half-hour" : "")" style="width: 70px; font-size: 11px;">
+                                        <span class="mt-1">@(time.Minutes == 0 ? time.ToString(@"hh\:mm") : "")</span>
+                                        @if (time.Minutes == 30) { <span class="text-muted opacity-50" style="font-size: 9px;">:30</span> }
+                                    </div>
+                                    <div class="flex-grow-1 p-2 d-flex gap-2 flex-wrap position-relative">
+                                        @foreach (var evt in timeEvents)
+                                        {
+                                            <div style="flex: 1; min-width: 250px; max-width: 400px;">
+                                                <partial name="_EventCard" model="evt" />
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

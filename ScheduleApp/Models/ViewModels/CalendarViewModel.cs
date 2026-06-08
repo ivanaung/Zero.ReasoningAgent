@@ -1,0 +1,1 @@
+namespace ScheduleApp.Models.ViewModels; public class CalendarViewModel { public DateTime CurrentDate { get; set; } = DateTime.Today; }

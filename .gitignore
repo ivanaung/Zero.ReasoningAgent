@@ -1,0 +1,19 @@
+# Build output
+bin/
+obj/
+.build/
+.vs/
+
+# User/local IDE state
+*.user
+*.suo
+
+# Runtime logs
+ScheduleApp/App_Data/Logs/
+
+# SQLite transient files
+*.db-shm
+*.db-wal
+
+# Local publish output
+publish/

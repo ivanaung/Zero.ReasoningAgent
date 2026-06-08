@@ -1,0 +1,465 @@
+@model ScheduleApp.Models.ViewModels.EmailHubViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Email Hub";
+    ViewData["AppContentClass"] = "app-content-fixed";
+    var initialMessages = Model.InboxMessages.ToList();
+    var initialPreview = initialMessages.FirstOrDefault();
+    var inboxJson = JsonSerializer.Serialize(Model.InboxMessages.Select(item => new
+    {
+        id = item.Id,
+        subject = item.Subject,
+        from = item.From,
+        receivedAt = item.ReceivedAt?.ToString("o"),
+        snippet = item.Snippet,
+        webUrl = item.WebUrl,
+        htmlBody = item.HtmlBody,
+        textBody = item.TextBody
+    }));
+}
+
+<div class="mail-shell h-100" data-mail-root data-feed-url="@Url.Action("Feed", "EmailHub")" data-initial-count="@Model.InboxMessages.Count" data-max-items="@Model.InboxDisplayLimit" data-cache-key="@(Model.Status.ConnectedEmail ?? "anonymous")">
+    <section class="mail-panel">
+        <div class="mail-workspace">
+            <section class="mail-list-pane">
+                <header class="mail-toolbar">
+                    <div class="mail-toolbar-title">
+                        <span class="mail-status-dot @(Model.Status.IsConnected ? "is-live" : string.Empty)"></span>
+                        <div>
+                            <h4>Email Hub</h4>
+                            <span>@(Model.Status.ConnectedEmail ?? "Inbox workspace")</span>
+                        </div>
+                    </div>
+
+                    <div class="mail-toolbar-main">
+                        <div class="mail-search">
+                            <i class="bi bi-search"></i>
+                            <input type="search" class="form-control" placeholder="Search sender, subject, or preview" data-mail-search />
+                        </div>
+
+                        <div class="mail-toolbar-actions">
+                            <div class="mail-chip-set" role="tablist" aria-label="Inbox filters">
+                                <button type="button" class="mail-chip is-active" data-filter="all">All</button>
+                                <button type="button" class="mail-chip" data-filter="today">Today</button>
+                                <button type="button" class="mail-chip" data-filter="meeting">Meetings</button>
+                            </div>
+
+                            <select class="form-select form-select-sm mail-select" data-sync-interval>
+                                <option value="0">Manual sync</option>
+                                <option value="30">30s auto sync</option>
+                                <option value="60">1m auto sync</option>
+                                <option value="300">5m auto sync</option>
+                            </select>
+
+                            <button type="button" class="btn btn-light btn-sm mail-button" data-mail-refresh>
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+
+                            <button type="button" class="btn btn-light btn-sm mail-button" data-mail-load-more>
+                                Load more
+                            </button>
+
+                            <a asp-controller="Settings" asp-action="Index" asp-route-tab="integration" class="btn btn-light btn-sm mail-button">
+                                <i class="bi bi-gear"></i>
+                            </a>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="mail-toolbar-meta">
+                    <span class="mail-meta-pill">@(Model.InboxMessages.Count) messages</span>
+                    <span class="mail-meta-text">@Model.Status.StatusMessage</span>
+                    <span class="mail-meta-sync" data-mail-sync-state>
+                        <span class="mail-meta-spinner d-none" data-mail-spinner></span>
+                        <span data-mail-sync-label>@(Model.InboxMessages.Any() ? "Loaded cached inbox. Checking for new mail..." : "Loading inbox...")</span>
+                    </span>
+                    @if (!string.IsNullOrWhiteSpace(Model.InboxError))
+                    {
+                        <span class="mail-meta-error" data-mail-error>@Model.InboxError</span>
+                    }
+                    else
+                    {
+                        <span class="mail-meta-text d-none" data-mail-error></span>
+                    }
+                </div>
+
+                <div class="mail-list-head">
+                    <span>Inbox</span>
+                    <strong data-mail-count>@Model.InboxMessages.Count</strong>
+                </div>
+
+                <div class="mail-loading-overlay @(Model.InboxMessages.Any() ? string.Empty : "is-visible")" data-mail-loading>
+                    <span class="mail-loading-spinner"></span>
+                    <strong data-mail-loading-title>@(Model.InboxMessages.Any() ? "Syncing inbox" : "Loading inbox")</strong>
+                    <span data-mail-loading-copy>@(Model.InboxMessages.Any() ? "Checking Google for newer messages..." : "Connecting to your local cache and Google inbox...")</span>
+                </div>
+
+                <div class="mail-list" data-mail-list>
+                    @foreach (var item in initialMessages)
+                    {
+                        <button type="button" class="mail-item @(item.Id == initialPreview?.Id ? "is-active" : string.Empty)" data-mail-id="@item.Id">
+                            <div class="mail-item-top">
+                                <strong class="mail-item-from">@(string.IsNullOrWhiteSpace(item.From) ? "-" : item.From)</strong>
+                                <span class="mail-item-time">@(item.ReceivedAt?.ToLocalTime().ToString("hh:mm tt") ?? "-")</span>
+                            </div>
+                            <div class="mail-item-subject">@(string.IsNullOrWhiteSpace(item.Subject) ? "(no subject)" : item.Subject)</div>
+                            <div class="mail-item-snippet">@(item.Snippet ?? string.Empty)</div>
+                        </button>
+                    }
+                </div>
+
+                <div class="mail-empty @(Model.InboxMessages.Any() ? "d-none" : string.Empty)" data-mail-empty>
+                    <i class="bi bi-envelope-open"></i>
+                    <strong>No messages</strong>
+                    <span>@(Model.InboxError ?? "Connect Google and sync the inbox to see messages here.")</span>
+                </div>
+            </section>
+
+            <section class="mail-preview-pane">
+                <div class="mail-preview-head">
+                    <div class="mail-preview-actions">
+                        <span class="mail-preview-kicker">Preview</span>
+                        <a href="@(initialPreview?.WebUrl ?? "#")" class="btn btn-link btn-sm p-0 text-decoration-none @(string.IsNullOrWhiteSpace(initialPreview?.WebUrl) ? "d-none" : string.Empty)" data-mail-open target="_blank" rel="noreferrer">
+                            Open in Gmail
+                        </a>
+                    </div>
+                    <div class="mail-preview-summary">
+                        <h5 data-mail-preview-subject>@(initialPreview?.Subject ?? "Select a message")</h5>
+                        <div class="mail-preview-meta">
+                            <strong data-mail-preview-from>@(initialPreview?.From ?? "-")</strong>
+                            <span class="mail-preview-meta-sep">•</span>
+                            <span data-mail-preview-date>@(initialPreview?.ReceivedAt?.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt") ?? "-")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mail-preview-content">
+                    <article class="mail-preview-body @(string.IsNullOrWhiteSpace(initialPreview?.HtmlBody) ? string.Empty : "d-none")" data-mail-preview-snippet>
+                        @((!string.IsNullOrWhiteSpace(initialPreview?.TextBody) ? initialPreview.TextBody : initialPreview?.Snippet) ?? "Select a message to preview its Gmail snippet and metadata.")
+                    </article>
+                    <div class="mail-preview-html @(string.IsNullOrWhiteSpace(initialPreview?.HtmlBody) ? "d-none" : string.Empty)" data-mail-preview-html-wrap>
+                        <iframe class="mail-preview-frame" title="Email preview" sandbox data-mail-preview-html srcdoc="@initialPreview?.HtmlBody"></iframe>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </section>
+</div>
+
+@section PageStyles {
+    <link rel="stylesheet" href="~/css/email-hub.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            const root = document.querySelector('[data-mail-root]');
+            if (!root) {
+                return;
+            }
+
+            const feedUrl = root.dataset.feedUrl;
+            const cacheKey = `email-hub-cache:${root.dataset.cacheKey || 'anonymous'}`;
+            const search = root.querySelector('[data-mail-search]');
+            const listHost = root.querySelector('[data-mail-list]');
+            const emptyHost = root.querySelector('[data-mail-empty]');
+            const errorHost = root.querySelector('[data-mail-error]');
+            const countHost = root.querySelector('[data-mail-count]');
+            const syncState = root.querySelector('[data-mail-sync-state]');
+            const syncSpinner = root.querySelector('[data-mail-spinner]');
+            const syncLabel = root.querySelector('[data-mail-sync-label]');
+            const loadingOverlay = root.querySelector('[data-mail-loading]');
+            const loadingTitle = root.querySelector('[data-mail-loading-title]');
+            const loadingCopy = root.querySelector('[data-mail-loading-copy]');
+            const refreshButton = root.querySelector('[data-mail-refresh]');
+            const loadMoreButton = root.querySelector('[data-mail-load-more]');
+            const syncInterval = root.querySelector('[data-sync-interval]');
+            const filterButtons = Array.from(root.querySelectorAll('[data-filter]'));
+            const previewFrom = root.querySelector('[data-mail-preview-from]');
+            const previewDate = root.querySelector('[data-mail-preview-date]');
+            const previewSubject = root.querySelector('[data-mail-preview-subject]');
+            const previewSnippet = root.querySelector('[data-mail-preview-snippet]');
+            const previewHtmlWrap = root.querySelector('[data-mail-preview-html-wrap]');
+            const previewHtml = root.querySelector('[data-mail-preview-html]');
+            const previewOpen = root.querySelector('[data-mail-open]');
+
+            let items = @Html.Raw(inboxJson);
+            let selectedId = items.length ? items[0].id : null;
+            let activeFilter = 'all';
+            let autoSyncHandle = null;
+            const maxItems = Math.max(parseInt(root.dataset.maxItems || '100', 10), 1);
+            let take = Math.max(parseInt(root.dataset.initialCount || '12', 10), Math.min(maxItems, 12));
+            let isRefreshing = false;
+
+            function loadLocalCache() {
+                try {
+                    const raw = window.localStorage.getItem(cacheKey);
+                    if (!raw) {
+                        return [];
+                    }
+
+                    const parsed = JSON.parse(raw);
+                    return Array.isArray(parsed) ? parsed.map(item => ({
+                        ...item,
+                        htmlBody: '',
+                        textBody: item.textBody || ''
+                    })) : [];
+                } catch {
+                    return [];
+                }
+            }
+
+            function saveLocalCache(nextItems) {
+                try {
+                    const payload = Array.isArray(nextItems)
+                        ? nextItems.slice(0, Math.min(maxItems, 100)).map(item => ({
+                            id: item.id,
+                            subject: item.subject,
+                            from: item.from,
+                            receivedAt: item.receivedAt,
+                            snippet: item.snippet,
+                            webUrl: item.webUrl,
+                            textBody: item.textBody || ''
+                        }))
+                        : [];
+                    window.localStorage.setItem(cacheKey, JSON.stringify(payload));
+                } catch {
+                }
+            }
+
+            function setLoadingState(isLoading, title, message) {
+                isRefreshing = isLoading;
+                root.classList.toggle('is-syncing', isLoading);
+
+                if (syncSpinner) {
+                    syncSpinner.classList.toggle('d-none', !isLoading);
+                }
+
+                if (syncLabel) {
+                    syncLabel.textContent = message || (isLoading ? 'Refreshing inbox...' : 'Inbox is up to date.');
+                }
+
+                if (loadingOverlay) {
+                    loadingOverlay.classList.toggle('is-visible', isLoading && items.length === 0);
+                }
+
+                if (loadingTitle) {
+                    loadingTitle.textContent = title || (isLoading ? 'Loading inbox' : 'Inbox ready');
+                }
+
+                if (loadingCopy) {
+                    loadingCopy.textContent = message || (isLoading ? 'Checking for the latest Gmail messages...' : 'Inbox is up to date.');
+                }
+
+                if (refreshButton) {
+                    refreshButton.disabled = isLoading;
+                }
+
+                if (loadMoreButton) {
+                    loadMoreButton.disabled = isLoading || take >= maxItems;
+                }
+            }
+
+            function formatReceived(value, mode) {
+                if (!value) {
+                    return '-';
+                }
+
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) {
+                    return '-';
+                }
+
+                return mode === 'time'
+                    ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : date.toLocaleString([], { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            }
+
+            function matchesFilter(item) {
+                const searchTerm = (search?.value || '').trim().toLowerCase();
+                const haystack = `${item.subject || ''} ${item.from || ''} ${item.snippet || ''}`.toLowerCase();
+                if (searchTerm && !haystack.includes(searchTerm)) {
+                    return false;
+                }
+
+                if (activeFilter === 'today') {
+                    const date = item.receivedAt ? new Date(item.receivedAt) : null;
+                    const now = new Date();
+                    return date
+                        && date.getFullYear() === now.getFullYear()
+                        && date.getMonth() === now.getMonth()
+                        && date.getDate() === now.getDate();
+                }
+
+                if (activeFilter === 'meeting') {
+                    return haystack.includes('meeting') || haystack.includes('calendar');
+                }
+
+                return true;
+            }
+
+            function renderPreview(item) {
+                if (!item) {
+                    previewSubject.textContent = 'Select a message';
+                    previewFrom.textContent = '-';
+                    previewDate.textContent = '-';
+                    previewSnippet.textContent = 'Select a message to preview its Gmail snippet and metadata.';
+                    previewSnippet.classList.remove('d-none');
+                    previewHtmlWrap.classList.add('d-none');
+                    previewHtml.srcdoc = '';
+                    previewOpen.classList.add('d-none');
+                    previewOpen.href = '#';
+                    return;
+                }
+
+                previewSubject.textContent = item.subject || '(no subject)';
+                previewFrom.textContent = item.from || '-';
+                previewDate.textContent = formatReceived(item.receivedAt, 'full');
+                const htmlBody = (item.htmlBody || '').trim();
+                const textBody = (item.textBody || '').trim();
+                previewSnippet.textContent = textBody || item.snippet || 'No preview text available for this message.';
+                previewSnippet.classList.toggle('d-none', htmlBody.length > 0);
+                previewHtmlWrap.classList.toggle('d-none', htmlBody.length === 0);
+                previewHtml.srcdoc = htmlBody;
+                previewOpen.href = item.webUrl || '#';
+                previewOpen.classList.toggle('d-none', !item.webUrl);
+            }
+
+            function renderList() {
+                const visible = items.filter(matchesFilter);
+                listHost.innerHTML = '';
+
+                if (countHost) {
+                    countHost.textContent = visible.length.toString();
+                }
+
+                if (visible.length === 0) {
+                    emptyHost.classList.remove('d-none');
+                    renderPreview(null);
+                    return;
+                }
+
+                emptyHost.classList.add('d-none');
+                if (!visible.some(item => item.id === selectedId)) {
+                    selectedId = visible[0].id;
+                }
+
+                visible.forEach(item => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'mail-item' + (item.id === selectedId ? ' is-active' : '');
+                    button.innerHTML = `
+                        <div class="mail-item-top">
+                            <strong class="mail-item-from">${escapeHtml(item.from || '-')}</strong>
+                            <span class="mail-item-time">${escapeHtml(formatReceived(item.receivedAt, 'time'))}</span>
+                        </div>
+                        <div class="mail-item-subject">${escapeHtml(item.subject || '(no subject)')}</div>
+                        <div class="mail-item-snippet">${escapeHtml(item.snippet || '')}</div>
+                    `;
+                    button.addEventListener('click', function () {
+                        selectedId = item.id;
+                        renderList();
+                    });
+                    listHost.appendChild(button);
+                });
+
+                renderPreview(visible.find(item => item.id === selectedId) || visible[0]);
+
+                if (loadMoreButton) {
+                    loadMoreButton.disabled = isRefreshing || take >= maxItems;
+                }
+            }
+
+            async function refreshFeed(forceTake) {
+                const nextTake = Math.min(forceTake || take, maxItems);
+                const isLoadMore = nextTake > take;
+                setLoadingState(true, isLoadMore ? 'Loading more messages' : 'Syncing inbox', isLoadMore ? 'Pulling additional messages from Google...' : 'Checking Google for newer messages...');
+
+                try {
+                    const response = await fetch(`${feedUrl}?take=${nextTake}`, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const payload = await response.json();
+                    if (!payload.ok) {
+                        if (errorHost) {
+                            errorHost.textContent = payload.error || 'Unable to sync inbox.';
+                            errorHost.classList.remove('d-none');
+                        }
+                        setLoadingState(false, 'Sync unavailable', 'Inbox sync could not be completed.');
+                        return;
+                    }
+
+                    take = nextTake;
+                    items = Array.isArray(payload.items) ? payload.items : [];
+                    saveLocalCache(items);
+                    if (errorHost) {
+                        errorHost.textContent = '';
+                        errorHost.classList.add('d-none');
+                    }
+                    renderList();
+                    setLoadingState(false, 'Inbox ready', items.length === 0 ? 'No inbox messages available yet.' : `Inbox updated. Showing ${items.length} message${items.length === 1 ? '' : 's'}.`);
+                } catch {
+                    setLoadingState(false, 'Sync unavailable', 'Inbox sync could not be completed.');
+                }
+            }
+
+            function setAutoSync(seconds) {
+                if (autoSyncHandle) {
+                    window.clearInterval(autoSyncHandle);
+                    autoSyncHandle = null;
+                }
+
+                if (seconds > 0) {
+                    autoSyncHandle = window.setInterval(() => {
+                        refreshFeed(take).catch(() => {});
+                    }, seconds * 1000);
+                }
+            }
+
+            function escapeHtml(value) {
+                return String(value)
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#39;');
+            }
+
+            search?.addEventListener('input', renderList);
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    activeFilter = button.dataset.filter || 'all';
+                    filterButtons.forEach(node => node.classList.toggle('is-active', node === button));
+                    renderList();
+                });
+            });
+
+            refreshButton?.addEventListener('click', function () {
+                refreshFeed(take).catch(() => {});
+            });
+
+            loadMoreButton?.addEventListener('click', function () {
+                refreshFeed(Math.min(take + 24, maxItems)).catch(() => {});
+            });
+
+            syncInterval?.addEventListener('change', function () {
+                setAutoSync(parseInt(syncInterval.value || '0', 10) || 0);
+            });
+
+            if (items.length === 0) {
+                const localItems = loadLocalCache();
+                if (localItems.length > 0) {
+                    items = localItems;
+                    selectedId = items[0]?.id || null;
+                }
+            } else {
+                saveLocalCache(items);
+            }
+
+            renderList();
+            setLoadingState(false, 'Inbox ready', items.length === 0 ? 'Loading inbox...' : 'Loaded cached inbox. Checking for new mail...');
+            refreshFeed(take).catch(() => {});
+        })();
+    </script>
+}

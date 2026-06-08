@@ -1,0 +1,18 @@
+@model List<ScheduleApp.Models.FinanceCategory>
+@{
+    ViewData["Title"] = "Finance Categories";
+}
+<div class="card border-0 shadow-sm"><div class="card-body p-3">
+    <div class="d-flex justify-content-between align-items-center mb-3"><div><div class="management-kicker">Finance Monitor</div><h4 class="mb-0 fw-bold">Categories</h4></div><a class="btn btn-light" asp-controller="Finance" asp-action="Index">Back</a></div>
+    <form asp-controller="Finance" asp-action="SaveCategory" method="post" class="row g-2 mb-4">
+        @Html.AntiForgeryToken()
+        <div class="col-md-4"><input class="form-control" name="Name" placeholder="Category name" /></div>
+        <div class="col-md-3"><select class="form-select" name="Type">@foreach (var type in Enum.GetValues<ScheduleApp.Models.FinanceCategoryType>()){<option value="@type">@type</option>}</select></div>
+        <div class="col-md-3"><select class="form-select" name="Scope">@foreach (var scope in Enum.GetValues<ScheduleApp.Models.FinanceScope>()){<option value="@scope">@scope</option>}</select></div>
+        <div class="col-md-1"><select class="form-select" name="IsDefault"><option value="false">Custom</option><option value="true">Default</option></select></div>
+        <div class="col-md-1"><button class="btn btn-primary w-100" type="submit">Save</button></div>
+    </form>
+    <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Name</th><th>Type</th><th>Scope</th><th>Default</th><th></th></tr></thead><tbody>
+    @foreach (var item in Model){<tr><td>@item.Name</td><td>@item.Type</td><td>@item.Scope</td><td>@(item.IsDefault ? "Yes" : "No")</td><td class="text-end"><form asp-controller="Finance" asp-action="DeleteCategory" method="post" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@item.Id" /><button class="btn btn-sm btn-outline-danger" type="submit">Delete</button></form></td></tr>}
+    </tbody></table></div>
+</div></div>

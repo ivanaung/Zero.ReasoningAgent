@@ -1,0 +1,1 @@
+using ScheduleApp.Models; namespace ScheduleApp.Models.ViewModels; public class DayViewModel { public DateTime Date { get; set; } public List<ScheduleEvent> Events { get; set; } = new(); }

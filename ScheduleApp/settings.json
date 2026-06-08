@@ -1,0 +1,10 @@
+{
+  "DayStartTime": "06:30",
+  "DayEndTime": "22:30",
+  "Theme": "Light",
+  "ShowFullDayInCalendar": false,
+  "Clock1TimeZone": "Pacific/Auckland",
+  "Clock2TimeZone": "Asia/Singapore",
+  "Clock3TimeZone": "America/New_York",
+  "Clock4TimeZone": "Asia/Yangon"
+}

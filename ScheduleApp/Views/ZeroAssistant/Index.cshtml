@@ -1,0 +1,182 @@
+﻿@model ScheduleApp.Models.ViewModels.ZeroAssistantPageViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Zero Assistant";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zero - A Local-First Reasoning Agent</title>
+    <link rel="icon" href="~/img/favicon.ico" sizes="any" asp-append-version="true" />
+    <link rel="apple-touch-icon" href="~/img/apple-touch-icon.png" asp-append-version="true" />
+    <link rel="manifest" href="~/site.webmanifest" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/zero-assistant.css" asp-append-version="true" />
+</head>
+<body class="zero-standalone-body">
+    <div class="zero-assistant-page"
+         data-zero-assistant
+         data-chat-url="@Url.Action("ZeroChat", "AiAssistant")"
+         data-history-url="@Url.Action("ZeroHistory", "AiAssistant")"
+         data-voice-url="@Url.Action("Voice", "AiAssistant")"
+         data-transcribe-url="@Url.Action("Transcribe", "AiAssistant")"
+        data-speech-rate="@Model.Settings.BrowserSpeechRate"
+        data-speech-pitch="@Model.Settings.BrowserSpeechPitch">
+        <section class="zero-console">
+            <div class="zero-workspace">
+                <aside class="zero-side-panel">
+                    <div class="zero-compact-actions">
+                        <div class="zero-status-pill" data-zero-status>
+                            <i class="bi bi-activity"></i>
+                            <span>Ready</span>
+                        </div>
+                        <a asp-controller="Settings"
+                           asp-action="Index"
+                           asp-route-tab="ai"
+                           class="zero-settings-link"
+                           target="_blank"
+                           rel="noopener"
+                           title="Open Zero settings">
+                            <i class="bi bi-gear-fill"></i>
+                        </a>
+                    </div>
+
+                    <div class="zero-avatar">
+                        <div class="zero-avatar-stage">
+                            <span class="zero-wave-layer zero-wave-layer-1"></span>
+                            <span class="zero-wave-layer zero-wave-layer-2"></span>
+                            <span class="zero-wave-layer zero-wave-layer-3"></span>
+                            <span class="zero-wave-layer zero-wave-layer-4"></span>
+                            <span class="zero-audio-reactor"></span>
+                            <div class="zero-avatar-core" data-zero-avatar>
+                                <img src="~/img/butlerzero.png" alt="Zero" asp-append-version="true" />
+                            </div>
+                        </div>
+                        <div class="zero-avatar-status" data-zero-avatar-status>Idle</div>
+                        <div class="zero-input-indicator" data-zero-input-indicator aria-label="Voice input level">
+                            @for (var i = 0; i < 16; i++)
+                            {
+                                <span></span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="zero-control-row">
+                        <button class="zero-control-button" type="button" data-zero-record title="Click to talk" @(Model.Settings.EnableVoice ? null : "disabled")>
+                            <i class="bi bi-mic-fill"></i>
+                        </button>
+                        <button class="zero-control-button" type="button" data-zero-listen title="Toggle listen mode" @(Model.Settings.EnableVoice ? null : "disabled")>
+                            <i class="bi bi-ear"></i>
+                        </button>
+                        <button class="zero-control-button" type="button" data-zero-mute title="Mute browser speech">
+                            <i class="bi bi-volume-up-fill"></i>
+                        </button>
+                        <button class="zero-control-button" type="button" data-zero-clear title="Clear conversation">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                    </div>
+                    <div class="zero-voice-hint" data-zero-voice-hint>
+                        <i class="bi bi-info-circle"></i>
+                        <span>Mic: click to talk. Ear: listen mode, then speak. No wake word required.</span>
+                    </div>
+
+                    <div class="zero-memory-card">
+                        <div class="zero-panel-title">
+                            <span>Memory</span>
+                            <small>@Model.Memory.Count saved</small>
+                        </div>
+                        <div class="zero-memory-list">
+                            @if (Model.Memory.Count == 0)
+                            {
+                                <div class="zero-empty">No saved memory yet.</div>
+                            }
+                            else
+                            {
+                                @foreach (var memory in Model.Memory)
+                                {
+                                    <div class="zero-memory-item">@memory</div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </aside>
+
+                <main class="zero-main-panel">
+                    <div class="zero-tab-strip" role="tablist">
+                        <button class="zero-tab active" type="button" data-zero-tab="conversation">
+                            <i class="bi bi-chat-dots"></i>
+                            <span>Conversation</span>
+                        </button>
+                        <button class="zero-tab" type="button" data-zero-tab="tools">
+                            <i class="bi bi-grid-1x2"></i>
+                            <span>Tools</span>
+                        </button>
+                    </div>
+
+                    <section class="zero-tab-panel active" data-zero-panel="conversation">
+                        <div class="zero-messages" data-zero-messages>
+                            <article class="zero-message assistant">
+                                <div class="zero-bubble zero-markdown">
+                                    Ready. Type a request or use the microphone.
+                                </div>
+                            </article>
+                        </div>
+
+                        <form class="zero-composer" data-zero-form>
+                            <div class="zero-composer-row">
+                                <textarea class="form-control" rows="2" data-zero-input placeholder="Ask about tasks, projects, finance, Google, or say: find files report in D:\Work"></textarea>
+                                <button type="submit" class="btn btn-primary" data-zero-submit>
+                                    <i class="bi bi-send-fill"></i>
+                                    Send
+                                </button>
+                            </div>
+                            <div class="zero-composer-actions">
+                                <div class="zero-meta" data-zero-meta>Session ready</div>
+                            </div>
+                        </form>
+                    </section>
+
+                    <section class="zero-tab-panel" data-zero-panel="tools">
+                        <div class="zero-tool-grid">
+                            @foreach (var action in Model.Actions)
+                            {
+                                <article class="zero-tool-card">
+                                    <div class="zero-tool-head">
+                                        <h6>@action.Title</h6>
+                                        <span>Ready</span>
+                                    </div>
+                                    <p>@action.Description</p>
+                                    <button type="button" class="btn btn-light btn-sm" data-zero-prompt="@action.PromptHint">
+                                        <i class="bi bi-arrow-down-right-circle"></i>
+                                        Load Prompt
+                                    </button>
+                                </article>
+                            }
+                        </div>
+                    </section>
+
+                    <section class="zero-result-panel" data-zero-results hidden>
+                        <div class="zero-result-head">
+                            <div>
+                                <div class="management-kicker">Result Workspace</div>
+                                <h6 class="mb-0" data-zero-result-title>Result</h6>
+                            </div>
+                            <button type="button" class="btn btn-light btn-sm" data-zero-result-close>
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                        <div class="zero-result-body" data-zero-result-body></div>
+                    </section>
+                </main>
+            </div>
+        </section>
+    </div>
+    <script src="~/js/zero-assistant.js" asp-append-version="true"></script>
+</body>
+</html>
+

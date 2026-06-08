@@ -1,0 +1,60 @@
+@model DateTime
+@{
+    var displayMonth = new DateTime(Model.Year, Model.Month, 1);
+    var startOffset = ((int)displayMonth.DayOfWeek + 6) % 7;
+    var gridStart = displayMonth.AddDays(-startOffset);
+    var currentAction = ViewData["MiniCalendarAction"]?.ToString() ?? "Index";
+    var currentView = ViewData["MiniCalendarView"]?.ToString();
+}
+
+<div class="card border-0 shadow-sm calendar-mini-card">
+    <div class="card-body p-3">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <a class="btn btn-light icon-btn btn-sm" asp-controller="Events" asp-action="@currentAction" asp-route-date="@displayMonth.AddMonths(-1).ToString("yyyy-MM-dd")" asp-route-view="@currentView" aria-label="Previous month">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+            <div class="text-center">
+                <div class="management-kicker">Month View</div>
+                <div class="fw-bold">@displayMonth.ToString("MMMM yyyy")</div>
+            </div>
+            <a class="btn btn-light icon-btn btn-sm" asp-controller="Events" asp-action="@currentAction" asp-route-date="@displayMonth.AddMonths(1).ToString("yyyy-MM-dd")" asp-route-view="@currentView" aria-label="Next month">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+
+        <div class="calendar-mini-grid calendar-mini-grid-head">
+            @foreach (var dayName in new[] { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" })
+            {
+                <span>@dayName</span>
+            }
+        </div>
+
+        <div class="calendar-mini-grid">
+            @for (var index = 0; index < 42; index++)
+            {
+                var day = gridStart.AddDays(index);
+                var classes = new List<string> { "calendar-mini-day" };
+                if (day.Month != displayMonth.Month)
+                {
+                    classes.Add("is-muted");
+                }
+                if (day.Date == DateTime.Today)
+                {
+                    classes.Add("is-today");
+                }
+                if (day.Date == Model.Date)
+                {
+                    classes.Add("is-selected");
+                }
+
+                <a class="@string.Join(" ", classes)"
+                   asp-controller="Events"
+                   asp-action="@currentAction"
+                   asp-route-date="@day.ToString("yyyy-MM-dd")"
+                   asp-route-view="@currentView">
+                    @day.Day
+                </a>
+            }
+        </div>
+    </div>
+</div>

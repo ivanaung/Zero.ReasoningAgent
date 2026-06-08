@@ -1,0 +1,87 @@
+@model ScheduleApp.Modules.Trading.TradingAdvisorPageViewModel
+@{
+    ViewData["Title"] = "Trading Advisor";
+}
+
+@section PageStyles {
+    <link rel="stylesheet" href="~/css/trading.css" asp-append-version="true" />
+}
+
+<div class="d-flex flex-column gap-3">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center gap-3 flex-wrap">
+            <div><div class="management-kicker">Trading Advisor</div><h4 class="mb-0 fw-bold">Advisor</h4>
+                @if (!string.IsNullOrWhiteSpace(Model.PriceWarning))
+                {
+                    <div>@Model.PriceWarning</div>
+                }
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-light" asp-action="Index">Dashboard</a>
+                <form asp-action="GenerateAdvice" method="post">
+                    @Html.AntiForgeryToken()
+                    <button class="btn btn-primary" type="submit">Generate Portfolio Advice</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-3">
+            <div class="management-kicker">Advice Result</div>
+            <h6 class="fw-bold mb-3">Latest Advisory Summary</h6>
+            @if (Model.LatestAdvice is null)
+            {
+                <div class="text-muted small">No advisory summary saved yet.</div>
+            }
+            else
+            {
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="trading-advice-card h-100">
+                            <div class="small text-muted mb-2">Provider: @Model.LatestAdvice.ProviderLabel @(string.IsNullOrWhiteSpace(Model.LatestAdvice.ModelId) ? string.Empty : $"/ {Model.LatestAdvice.ModelId}")</div>
+                            <div class="fw-semibold fs-5 mb-2">@Model.LatestAdvice.Suggestion</div>
+                            <div class="mb-2">@Model.LatestAdvice.PortfolioSummary</div>
+                            <div class="small text-muted">Generated @Model.LatestAdvice.GeneratedAt.ToString("yyyy-MM-dd HH:mm")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="trading-advice-card h-100">
+                            <div class="mb-2"><strong>Risk level:</strong> @Model.LatestAdvice.RiskLevel</div>
+                            <div class="mb-2"><strong>Concentration risk:</strong> @Model.LatestAdvice.ConcentrationRisk</div>
+                            <div class="mb-2"><strong>Possible next action:</strong> @Model.LatestAdvice.PossibleNextAction</div>
+                            <div><strong>Reasoning:</strong> @Model.LatestAdvice.Reasoning</div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-3">
+            <div class="management-kicker">Advisor History</div>
+            <h6 class="fw-bold mb-3">Saved Snapshots</h6>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Date</th><th>Suggestion</th><th>Risk</th><th>Next Action</th><th>Provider</th></tr></thead>
+                    <tbody>
+                    @foreach (var item in Model.History)
+                    {
+                        <tr>
+                            <td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@item.Suggestion</td>
+                            <td>@item.RiskLevel</td>
+                            <td>@item.PossibleNextAction</td>
+                            <td>@item.ProviderLabel</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

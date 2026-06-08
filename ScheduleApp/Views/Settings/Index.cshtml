@@ -1,0 +1,1330 @@
+@model ScheduleApp.Models.ViewModels.SettingsPageViewModel
+@{
+    ViewData["Title"] = "Settings";
+    bool isAiTab = string.Equals(Model.ActiveTab, "ai", StringComparison.OrdinalIgnoreCase);
+    bool isIntegrationTab = string.Equals(Model.ActiveTab, "integration", StringComparison.OrdinalIgnoreCase);
+    bool isDatabaseTab = false;
+    bool isMarketDataTab = false;
+    bool isDisplayTab = !isAiTab && !isIntegrationTab;
+
+    var timeOptions = new List<string>();
+    for (int h = 0; h < 24; h++)
+    {
+        timeOptions.Add($"{h:D2}:00");
+        timeOptions.Add($"{h:D2}:30");
+    }
+}
+
+<div class="settings-shell d-flex flex-column">
+    <div class="settings-header d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+        <div>
+            <div class="management-kicker">System Preferences</div>
+            <h4 class="mb-1 fw-bold">Settings Workspace</h4>
+            <p class="text-muted mb-0">Local agent preferences, memory, calendar, email, and display settings live together here.</p>
+        </div>
+    </div>
+
+    @if (Model.Saved)
+    {
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2 mb-3 settings-alert" role="alert">
+            <i class="bi bi-check-circle-fill"></i>
+            <div class="small fw-bold">Preferences saved successfully.</div>
+        </div>
+    }
+
+    @if (Model.AiSaved)
+    {
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2 mb-3 settings-alert" role="alert">
+            <i class="bi bi-check-circle-fill"></i>
+            <div class="small fw-bold">AI settings saved successfully.</div>
+        </div>
+    }
+
+    @if (Model.IntegrationSaved)
+    {
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2 mb-3 settings-alert" role="alert">
+            <i class="bi bi-check-circle-fill"></i>
+            <div class="small fw-bold">Google integration settings updated successfully.</div>
+        </div>
+    }
+
+    @if (Model.McpSaved)
+    {
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2 mb-3 settings-alert" role="alert">
+            <i class="bi bi-check-circle-fill"></i>
+            <div class="small fw-bold">MCP access settings updated successfully.</div>
+        </div>
+    }
+
+    @if (Model.ZeroSaved)
+    {
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2 mb-3 settings-alert" role="alert">
+            <i class="bi bi-check-circle-fill"></i>
+            <div class="small fw-bold">Zero Assistant settings saved successfully.</div>
+        </div>
+    }
+
+    @if (Model.DatabaseSaved)
+    {
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2 mb-3 settings-alert" role="alert">
+            <i class="bi bi-check-circle-fill"></i>
+            <div class="small fw-bold">Database settings saved successfully.</div>
+        </div>
+    }
+
+    @if (Model.MarketDataSaved)
+    {
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2 mb-3 settings-alert" role="alert">
+            <i class="bi bi-check-circle-fill"></i>
+            <div class="small fw-bold">Market data settings saved successfully.</div>
+        </div>
+    }
+
+    @if (TempData["IntegrationError"] is string integrationError && !string.IsNullOrWhiteSpace(integrationError))
+    {
+        <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center gap-2 mb-3 settings-alert" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div class="small fw-bold">@integrationError</div>
+        </div>
+    }
+
+    <div class="settings-workspace">
+        <div class="card border-0 shadow-sm overflow-hidden">
+            <div class="row g-0">
+                <div class="col-xl-3 col-lg-4 settings-nav-panel">
+                    <div class="settings-nav-shell h-100">
+                        <div class="settings-nav-head">
+                            <div class="settings-nav-icon">
+                                <i class="bi bi-sliders"></i>
+                            </div>
+                            <div>
+                                <div class="management-kicker">Sections</div>
+                                <h6 class="mb-0 fw-bold">Preference Areas</h6>
+                            </div>
+                        </div>
+
+                        <div class="nav flex-column nav-pills settings-nav-tabs" id="settings-tabs" role="tablist" aria-orientation="vertical">
+                            <button class="nav-link @(isDisplayTab ? "active" : string.Empty)" id="settings-display-tab" data-bs-toggle="pill" data-bs-target="#settings-display" type="button" role="tab" aria-controls="settings-display" aria-selected="@isDisplayTab.ToString().ToLowerInvariant()">
+                                <span class="settings-tab-icon"><i class="bi bi-calendar3"></i></span>
+                                <span>
+                                    <strong>Calendar & Display</strong>
+                                    <small>Timeline visibility and focus</small>
+                                </span>
+                            </button>
+                            <button class="nav-link @(isAiTab ? "active" : string.Empty)" id="settings-ai-tab" data-bs-toggle="pill" data-bs-target="#settings-ai" type="button" role="tab" aria-controls="settings-ai" aria-selected="@isAiTab.ToString().ToLowerInvariant()">
+                                <span class="settings-tab-icon"><i class="bi bi-stars"></i></span>
+                                <span>
+                                    <strong>AI Assistant</strong>
+                                    <small>Provider, guardrails, monitoring</small>
+                                </span>
+                            </button>
+                            <button class="nav-link @(isIntegrationTab ? "active" : string.Empty)" id="settings-integration-tab" data-bs-toggle="pill" data-bs-target="#settings-integration" type="button" role="tab" aria-controls="settings-integration" aria-selected="@isIntegrationTab.ToString().ToLowerInvariant()">
+                                <span class="settings-tab-icon"><i class="bi bi-google"></i></span>
+                                <span>
+                                    <strong>Email & Calendar</strong>
+                                    <small>Google account, inbox, calendar sync</small>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-9 col-lg-8">
+                    <div class="tab-content settings-content" id="settings-tab-content">
+                        <div class="tab-pane fade settings-tab-pane @(isDisplayTab ? "show active" : string.Empty)" id="settings-display" role="tabpanel" aria-labelledby="settings-display-tab" tabindex="0">
+                            <form asp-action="SavePreferences" method="post" id="preferencesForm" class="settings-section settings-form">
+                                @Html.AntiForgeryToken()
+                                <div class="settings-section-head">
+                                    <div>
+                                        <div class="management-kicker">Schedule Display</div>
+                                        <h5 class="mb-1 fw-bold">Calendar Preferences</h5>
+                                        <p class="text-muted mb-0">Define the day range emphasized across the calendar and schedule surfaces.</p>
+                                    </div>
+                                </div>
+
+                                <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
+
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <div class="settings-card-block">
+                                            <label class="form-label fw-bold small mb-2">Day Start Time</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-sunrise"></i></span>
+                                                <select asp-for="Preferences.DayStartTime" class="form-select border-start-0 ps-0">
+                                                    @foreach (var time in timeOptions)
+                                                    {
+                                                        <option value="@time">@time</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="settings-card-block">
+                                            <label class="form-label fw-bold small mb-2">Day End Time</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-sunset"></i></span>
+                                                <select asp-for="Preferences.DayEndTime" class="form-select border-start-0 ps-0">
+                                                    @foreach (var time in timeOptions)
+                                                    {
+                                                        <option value="@time">@time</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="settings-card-block mt-4">
+                                    <div class="form-check form-switch settings-switch-row">
+                                        <div>
+                                            <label class="form-check-label fw-bold small d-block" asp-for="Preferences.ShowFullDayInCalendar">Show Full 24 Hours</label>
+                                            <span class="text-muted small">Show all hours instead of using the focused day range.</span>
+                                        </div>
+                                        <input class="form-check-input ms-0" type="checkbox" asp-for="Preferences.ShowFullDayInCalendar">
+                                    </div>
+                                </div>
+
+                                <div class="settings-card-block mt-4">
+                                    <label class="form-label fw-bold small mb-2">Header World Clocks</label>
+                                    <div class="text-muted small mb-3">Select up to 4 cities to display real-time clocks on the top header bar.</div>
+                                    <div class="row g-3">
+                                        @{
+                                            var timezones = new Dictionary<string, string> {
+                                                {"", "- None -"},
+                                                {"Pacific/Auckland", "Auckland"},
+                                                {"Australia/Sydney", "Sydney"},
+                                                {"Asia/Tokyo", "Tokyo"},
+                                                {"Asia/Singapore", "Singapore"},
+                                                {"Asia/Yangon", "Yangon"},
+                                                {"Asia/Dubai", "Dubai"},
+                                                {"Europe/Paris", "Paris"},
+                                                {"Europe/Berlin", "Berlin"},
+                                                {"Europe/London", "London"},
+                                                {"America/New_York", "New York"},
+                                                {"America/Chicago", "Chicago"},
+                                                {"America/Denver", "Denver"},
+                                                {"America/Los_Angeles", "Los Angeles"}
+                                            };
+                                            var tzSelectList = new SelectList(timezones, "Key", "Value");
+                                        }
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold small text-muted">Clock 1</label>
+                                            <select asp-for="Preferences.Clock1TimeZone" asp-items="tzSelectList" class="form-select"></select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold small text-muted">Clock 2</label>
+                                            <select asp-for="Preferences.Clock2TimeZone" asp-items="tzSelectList" class="form-select"></select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold small text-muted">Clock 3</label>
+                                            <select asp-for="Preferences.Clock3TimeZone" asp-items="tzSelectList" class="form-select"></select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold small text-muted">Clock 4</label>
+                                            <select asp-for="Preferences.Clock4TimeZone" asp-items="tzSelectList" class="form-select"></select>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <div class="settings-form-actions">
+                                    <button type="submit" class="btn btn-primary px-4">
+                                        <i class="bi bi-check-lg"></i> Save Preferences
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="tab-pane fade settings-tab-pane @(isAiTab ? "show active" : string.Empty)" id="settings-ai" role="tabpanel" aria-labelledby="settings-ai-tab" tabindex="0">
+                            <form asp-action="SaveAi" method="post" id="aiSettingsForm" class="settings-section settings-form">
+                                @Html.AntiForgeryToken()
+                                <div class="settings-section-head">
+                                    <div>
+                                        <div class="management-kicker">Agent Orchestration</div>
+                                        <h5 class="mb-1 fw-bold">AI Assistant Settings</h5>
+                                        <p class="text-muted mb-0">Configure the provider, tool-calling, scheduling guardrails, and monitoring policy.</p>
+                                    </div>
+                                </div>
+
+                                <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
+
+                                <div class="settings-subtabs">
+                                    <div class="segmented-control settings-subtabs-nav mb-3" role="tablist" aria-label="AI settings sections">
+                                        <button type="button" class="btn active" id="ai-config-tab" data-bs-toggle="pill" data-bs-target="#ai-config-panel" role="tab" aria-controls="ai-config-panel" aria-selected="true">
+                                            Configuration
+                                        </button>
+                                        <button type="button" class="btn" id="ai-proactive-tab" data-bs-toggle="pill" data-bs-target="#ai-proactive-panel" role="tab" aria-controls="ai-proactive-panel" aria-selected="false">
+                                            Proactive Assist
+                                        </button>
+                                        <button type="button" class="btn" id="ai-tools-tab" data-bs-toggle="pill" data-bs-target="#ai-tools-panel" role="tab" aria-controls="ai-tools-panel" aria-selected="false">
+                                            Available Tools
+                                        </button>
+                                    </div>
+
+                                    <div class="tab-content">
+                                        <div class="tab-pane fade show active" id="ai-config-panel" role="tabpanel" aria-labelledby="ai-config-tab" tabindex="0">
+                                            <div class="settings-card-block">
+                                                <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                                                    <div>
+                                                        <div class="fw-bold">Provider Health</div>
+                                                        <div class="small text-muted" data-ai-test-message>@Model.AiHealthMessage</div>
+                                                    </div>
+                                                    <span class="badge @(string.Equals(Model.AiHealthStatus, "Online", StringComparison.OrdinalIgnoreCase) ? "bg-success-subtle text-success" : "bg-light text-muted") px-3 py-2 rounded-pill" data-ai-test-badge>@(Model.AiHealthStatus ?? "Offline")</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="settings-card-block">
+                                                <div class="row g-4">
+                                                    <div class="col-md-4">
+                                                        <label asp-for="Ai.ProviderType" class="form-label fw-bold small">Provider</label>
+                                                        <select asp-for="Ai.ProviderType" asp-items="Html.GetEnumSelectList<ScheduleApp.Models.AiProviderType>()" class="form-select" data-ai-provider></select>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label asp-for="Ai.ModelId" class="form-label fw-bold small">Model Id</label>
+                                                        <select asp-for="Ai.ModelId" class="form-select" data-ai-model data-current-value="@Model.Ai.ModelId">
+                                                            <option value="@Model.Ai.ModelId">@Model.Ai.ModelId</option>
+                                                        </select>
+                                                        <span asp-validation-for="Ai.ModelId" class="text-danger small"></span>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label asp-for="Ai.EndpointUrl" class="form-label fw-bold small">Endpoint</label>
+                                                        <div class="input-group">
+                                                            <input asp-for="Ai.EndpointUrl" class="form-control" data-ai-endpoint />
+                                                            <button type="button" class="btn btn-outline-primary" data-ai-load-models>Load Models</button>
+                                                        </div>
+                                                        <span asp-validation-for="Ai.EndpointUrl" class="text-danger small"></span>
+                                                    </div>
+                                                    <div class="col-md-8">
+                                                        <label asp-for="Ai.ApiKey" class="form-label fw-bold small">API Key</label>
+                                                        <input asp-for="Ai.ApiKey" class="form-control" placeholder="Leave blank to keep existing secret" data-ai-api-key />
+                                                        <div class="form-text">Ollama can leave this empty. Hosted providers should use a secret value here.</div>
+                                                    </div>
+                                                    <div class="col-md-4 d-flex align-items-end">
+                                                        <div class="d-flex align-items-center gap-3 flex-wrap w-100 justify-content-between">
+                                                            <div class="form-check form-switch">
+                                                                <input asp-for="Ai.ClearApiKey" class="form-check-input" type="checkbox" />
+                                                                <label asp-for="Ai.ClearApiKey" class="form-check-label small fw-bold">Clear saved key</label>
+                                                            </div>
+                                                            <button type="button" class="btn btn-outline-primary" data-ai-test>
+                                                                <i class="bi bi-plug"></i> Test AI
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="settings-card-block mt-4">
+                                                <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-3">
+                                                    <div>
+                                                        <div class="fw-bold">MCP Access</div>
+                                                        <div class="small text-muted">External agents can connect to the authenticated MCP endpoint by sending an API key in <code>@Model.Mcp.HeaderName</code>.</div>
+                                                    </div>
+                                                    <span class="badge bg-light text-muted px-3 py-2 rounded-pill">@Model.Mcp.EndpointPath</span>
+                                                </div>
+
+                                                @if (!string.IsNullOrWhiteSpace(Model.Mcp.NewlyGeneratedApiKey))
+                                                {
+                                                    <div class="alert alert-warning border-0 shadow-sm small">
+                                                        <div class="fw-bold mb-1">Copy this MCP API key now.</div>
+                                                        <div class="mb-2">It will not be shown again after you leave this page.</div>
+                                                        <code class="d-block text-break">@Model.Mcp.NewlyGeneratedApiKey</code>
+                                                    </div>
+                                                }
+
+                                                <div class="row g-3 align-items-end">
+                                                    <div class="col-md-8">
+                                                        <label asp-for="McpGenerate.Name" class="form-label fw-bold small">Key Name</label>
+                                                        <input asp-for="McpGenerate.Name" class="form-control" placeholder="External Agent" form="generateMcpApiKeyForm" />
+                                                        <span asp-validation-for="McpGenerate.Name" class="text-danger small"></span>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <button type="submit" class="btn btn-primary w-100" form="generateMcpApiKeyForm">
+                                                            <i class="bi bi-key"></i> Generate API Key
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div class="small text-muted mt-3 mb-2">
+                                                    Endpoint: <code>@($"{Context.Request.Scheme}://{Context.Request.Host}{Model.Mcp.EndpointPath}")</code>
+                                                </div>
+
+                                                @if (Model.Mcp.Keys.Count == 0)
+                                                {
+                                                    <div class="small text-muted mt-3">No MCP API keys have been created for this account yet.</div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="table-responsive mt-3">
+                                                        <table class="table table-sm align-middle mb-0">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Name</th>
+                                                                    <th>Prefix</th>
+                                                                    <th>Status</th>
+                                                                    <th>Last Used</th>
+                                                                    <th></th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach (var key in Model.Mcp.Keys)
+                                                                {
+                                                                    <tr>
+                                                                        <td class="fw-semibold">@key.Name</td>
+                                                                        <td><code>@key.KeyPrefix</code></td>
+                                                                        <td>
+                                                                            <span class="badge @(key.IsActive ? "bg-success-subtle text-success" : "bg-light text-muted")">
+                                                                                @(key.IsActive ? "Active" : "Revoked")
+                                                                            </span>
+                                                                        </td>
+                                                                        <td class="text-muted small">@(key.LastUsedAtUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "Never")</td>
+                                                                        <td class="text-end">
+                                                                            @if (key.IsActive)
+                                                                            {
+                                                                                <button type="submit" class="btn btn-outline-danger btn-sm" form="revokeMcpApiKeyForm-@key.Id">Revoke</button>
+                                                                            }
+                                                                        </td>
+                                                                    </tr>
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                }
+                                            </div>
+
+                                            <div class="settings-card-block">
+                                                <div class="row g-4">
+                                                    <div class="col-md-3">
+                                                        <label asp-for="Ai.Temperature" class="form-label fw-bold small">Temperature</label>
+                                                        <input asp-for="Ai.Temperature" class="form-control" type="number" step="0.1" min="0" max="2" />
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label asp-for="Ai.MaxTokens" class="form-label fw-bold small">Max Tokens</label>
+                                                        <input asp-for="Ai.MaxTokens" class="form-control" type="number" min="1" max="16000" />
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        @{
+                                                            var aiTimezones = new Dictionary<string, string> {
+                                                                {"Pacific/Auckland", "Auckland"},
+                                                                {"Australia/Sydney", "Sydney"},
+                                                                {"Asia/Tokyo", "Tokyo"},
+                                                                {"Asia/Singapore", "Singapore"},
+                                                                {"Asia/Yangon", "Yangon"},
+                                                                {"Asia/Dubai", "Dubai"},
+                                                                {"Europe/Paris", "Paris"},
+                                                                {"Europe/Berlin", "Berlin"},
+                                                                {"Europe/London", "London"},
+                                                                {"America/New_York", "New York"},
+                                                                {"America/Chicago", "Chicago"},
+                                                                {"America/Denver", "Denver"},
+                                                                {"America/Los_Angeles", "Los Angeles"}
+                                                            };
+                                                            var aiTzSelectList = new SelectList(aiTimezones, "Key", "Value");
+                                                        }
+                                                        <label asp-for="Ai.DefaultTimeZone" class="form-label fw-bold small">Local Time Zone</label>
+                                                        <select asp-for="Ai.DefaultTimeZone" asp-items="aiTzSelectList" class="form-select"></select>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label asp-for="Ai.WorkingDays" class="form-label fw-bold small">Working Days</label>
+                                                        <input asp-for="Ai.WorkingDays" class="form-control" placeholder="Mon,Tue,Wed,Thu,Fri" />
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label asp-for="Ai.WorkingHoursStart" class="form-label fw-bold small">Working Start</label>
+                                                        <input asp-for="Ai.WorkingHoursStart" class="form-control" />
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label asp-for="Ai.WorkingHoursEnd" class="form-label fw-bold small">Working End</label>
+                                                        <input asp-for="Ai.WorkingHoursEnd" class="form-control" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="settings-card-block">
+                                                <label asp-for="Ai.SystemPrompt" class="form-label fw-bold small">System Prompt</label>
+                                                <textarea asp-for="Ai.SystemPrompt" rows="8" class="form-control"></textarea>
+                                                <span asp-validation-for="Ai.SystemPrompt" class="text-danger small"></span>
+                                            </div>
+
+                                            <div class="settings-card-block">
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.IsEnabled" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.IsEnabled" class="form-check-label fw-bold small">Enable AI assistant</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.EnableToolCalling" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.EnableToolCalling" class="form-check-label fw-bold small">Enable tool calling</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.EnableStreaming" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.EnableStreaming" class="form-check-label fw-bold small">Enable streaming</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.EnableProgressMonitoring" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.EnableProgressMonitoring" class="form-check-label fw-bold small">Enable progress monitoring</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.AutoCreateLowRiskTasks" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.AutoCreateLowRiskTasks" class="form-check-label fw-bold small">Auto-create low-risk follow-ups</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.RequireApprovalForScheduleChange" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.RequireApprovalForScheduleChange" class="form-check-label fw-bold small">Require approval for schedule changes</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.RequireApprovalForTaskDeletion" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.RequireApprovalForTaskDeletion" class="form-check-label fw-bold small">Require approval for task deletion</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="settings-form-actions">
+                                                <button type="submit" class="btn btn-primary px-4">
+                                                    <i class="bi bi-cpu"></i> Save AI Settings
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="tab-pane fade" id="ai-proactive-panel" role="tabpanel" aria-labelledby="ai-proactive-tab" tabindex="0">
+                                            <div class="settings-card-block">
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.EnableProactiveAssist" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.EnableProactiveAssist" class="form-check-label fw-bold small">Enable proactive assist</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.RequireUserOptInForProactiveAssist" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.RequireUserOptInForProactiveAssist" class="form-check-label fw-bold small">Require user opt-in</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.EnableNextHourRecommendations" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.EnableNextHourRecommendations" class="form-check-label fw-bold small">Enable next-hour recommendations</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.EnableTomorrowRecommendations" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.EnableTomorrowRecommendations" class="form-check-label fw-bold small">Enable tomorrow recommendations</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.EnablePreEventReminders" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.EnablePreEventReminders" class="form-check-label fw-bold small">Enable pre-event reminders</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.EnableAiEnrichmentForNotifications" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.EnableAiEnrichmentForNotifications" class="form-check-label fw-bold small">Enable AI enrichment for notifications</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="settings-card-block">
+                                                <div class="row g-4">
+                                                    <div class="col-md-4">
+                                                        <label asp-for="Ai.PreEventReminderMinutes" class="form-label fw-bold small">Reminder Minutes Before</label>
+                                                        <input asp-for="Ai.PreEventReminderMinutes" class="form-control" type="number" min="1" max="240" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label asp-for="Ai.MorningDigestTime" class="form-label fw-bold small">Morning Digest Time</label>
+                                                        <input asp-for="Ai.MorningDigestTime" class="form-control" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label asp-for="Ai.AfternoonDigestTime" class="form-label fw-bold small">Afternoon Digest Time</label>
+                                                        <input asp-for="Ai.AfternoonDigestTime" class="form-control" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label asp-for="Ai.MaxRecommendationsPerNotification" class="form-label fw-bold small">Max Recommendations</label>
+                                                        <input asp-for="Ai.MaxRecommendationsPerNotification" class="form-control" type="number" min="1" max="10" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label asp-for="Ai.NotificationLookaheadHours" class="form-label fw-bold small">Notification Lookahead Hours</label>
+                                                        <input asp-for="Ai.NotificationLookaheadHours" class="form-control" type="number" min="1" max="168" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label asp-for="Ai.DigestLookaheadDays" class="form-label fw-bold small">Digest Lookahead Days</label>
+                                                        <input asp-for="Ai.DigestLookaheadDays" class="form-control" type="number" min="1" max="14" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label asp-for="Ai.QuietHoursStart" class="form-label fw-bold small">Quiet Hours Start</label>
+                                                        <input asp-for="Ai.QuietHoursStart" class="form-control" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label asp-for="Ai.QuietHoursEnd" class="form-label fw-bold small">Quiet Hours End</label>
+                                                        <input asp-for="Ai.QuietHoursEnd" class="form-control" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label asp-for="Ai.DefaultUserTimeZone" class="form-label fw-bold small">Default User Time Zone</label>
+                                                        <input asp-for="Ai.DefaultUserTimeZone" class="form-control" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="settings-card-block">
+                                                <div class="row g-3">
+                                                    <div class="col-md-4">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.SendInAppNotifications" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.SendInAppNotifications" class="form-check-label fw-bold small">Send in-app notifications</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.SendPushNotifications" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.SendPushNotifications" class="form-check-label fw-bold small">Send push notifications</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.SendEmailNotifications" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.SendEmailNotifications" class="form-check-label fw-bold small">Send email notifications</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.RecomputeOnTaskUpdate" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.RecomputeOnTaskUpdate" class="form-check-label fw-bold small">Recompute on task update</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.RecomputeOnAssignmentChange" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.RecomputeOnAssignmentChange" class="form-check-label fw-bold small">Recompute on assignment change</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-check form-switch">
+                                                            <input asp-for="Ai.RecomputeOnDependencyChange" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="Ai.RecomputeOnDependencyChange" class="form-check-label fw-bold small">Recompute on dependency change</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="settings-form-actions">
+                                                <button type="submit" class="btn btn-primary px-4">
+                                                    <i class="bi bi-bell"></i> Save Proactive Settings
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="tab-pane fade" id="ai-tools-panel" role="tabpanel" aria-labelledby="ai-tools-tab" tabindex="0">
+                                            <div class="settings-card-block">
+                                                <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-3">
+                                                    <div>
+                                                        <div class="fw-bold">Available Tools</div>
+                                                        <div class="small text-muted">Debug list of the project-management tools exposed to the AI agent.</div>
+                                                    </div>
+                                                    <span class="badge bg-light text-muted px-3 py-2 rounded-pill">@Model.AvailableTools.Count tools</span>
+                                                </div>
+
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm align-middle mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Tool</th>
+                                                                <th>Signature</th>
+                                                                <th>Description</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var tool in Model.AvailableTools)
+                                                            {
+                                                                <tr>
+                                                                    <td class="fw-semibold">@tool.Name</td>
+                                                                    <td><code>@tool.Signature</code></td>
+                                                                    <td class="text-muted small">@tool.Description</td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <form asp-action="SaveZero" method="post" id="zeroSettingsForm" class="settings-section settings-form mt-4" data-zero-settings-panel>
+                                @Html.AntiForgeryToken()
+                                <div class="settings-section-head">
+                                    <div>
+                                        <div class="management-kicker">Zero Assistant</div>
+                                        <h5 class="mb-1 fw-bold">Voice, Memory, and Local Tools</h5>
+                                        <p class="text-muted mb-0">Configure the separate Zero Assistant workspace while keeping provider and business data inside ScheduleApp.</p>
+                                    </div>
+                                    <a asp-controller="ZeroAssistant" asp-action="Index" class="btn btn-light" target="_blank" rel="noopener">
+                                        <i class="bi bi-stars"></i> Open Assistant
+                                    </a>
+                                </div>
+
+                                <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
+
+                                <div class="settings-card-block">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <div class="form-check form-switch">
+                                                <input asp-for="Zero.EnableVoice" class="form-check-input" type="checkbox" />
+                                                <label asp-for="Zero.EnableVoice" class="form-check-label fw-bold small">Enable voice assistant</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check form-switch">
+                                                <input asp-for="Zero.EnableLocalFileTools" class="form-check-input" type="checkbox" />
+                                                <label asp-for="Zero.EnableLocalFileTools" class="form-check-label fw-bold small">Enable local file tools</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check form-switch">
+                                                <input asp-for="Zero.EnableVisionTools" class="form-check-input" type="checkbox" />
+                                                <label asp-for="Zero.EnableVisionTools" class="form-check-label fw-bold small">Enable vision tools</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label asp-for="Zero.WhisperUrl" class="form-label fw-bold small">Whisper URL</label>
+                                            <input asp-for="Zero.WhisperUrl" class="form-control" />
+                                            <span asp-validation-for="Zero.WhisperUrl" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label asp-for="Zero.PiperUrl" class="form-label fw-bold small">Piper URL</label>
+                                            <input asp-for="Zero.PiperUrl" class="form-control" />
+                                            <span asp-validation-for="Zero.PiperUrl" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label asp-for="Zero.SearchProvider" class="form-label fw-bold small">Search Provider</label>
+                                            <select asp-for="Zero.SearchProvider" asp-items="Html.GetEnumSelectList<ScheduleApp.Models.ZeroSearchProvider>()" class="form-select"></select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label asp-for="Zero.PiperEndpoint" class="form-label fw-bold small">Piper Endpoint</label>
+                                            <input asp-for="Zero.PiperEndpoint" class="form-control" />
+                                            <span asp-validation-for="Zero.PiperEndpoint" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <label asp-for="Zero.SearXngBaseUrl" class="form-label fw-bold small">SearXNG Base URL</label>
+                                            <input asp-for="Zero.SearXngBaseUrl" class="form-control" />
+                                            <div class="form-text">Use <code>http://localhost:10100</code> on the host machine or <code>http://searxng:8080</code> when Zero runs inside Docker.</div>
+                                            <span asp-validation-for="Zero.SearXngBaseUrl" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label asp-for="Zero.PiperVoice" class="form-label fw-bold small">Piper Voice Actor</label>
+                                            <input asp-for="Zero.PiperVoice" class="form-control" list="zeroPiperVoiceOptions" placeholder="Default Piper voice" />
+                                            <datalist id="zeroPiperVoiceOptions">
+                                                @foreach (var voice in Model.Zero.PiperVoices)
+                                                {
+                                                    <option value="@voice.Name">@voice.Label</option>
+                                                }
+                                            </datalist>
+                                            <span asp-validation-for="Zero.PiperVoice" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label asp-for="Zero.HistoryLimit" class="form-label fw-bold small">History Limit</label>
+                                            <input asp-for="Zero.HistoryLimit" class="form-control" type="number" min="1" max="100" />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label asp-for="Zero.MemoryLimit" class="form-label fw-bold small">Memory Limit</label>
+                                            <input asp-for="Zero.MemoryLimit" class="form-control" type="number" min="1" max="30" />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label asp-for="Zero.RequestTimeoutSeconds" class="form-label fw-bold small">Timeout Seconds</label>
+                                            <input asp-for="Zero.RequestTimeoutSeconds" class="form-control" type="number" min="5" max="300" />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label asp-for="Zero.MaxUploadMegabytes" class="form-label fw-bold small">Upload MB</label>
+                                            <input asp-for="Zero.MaxUploadMegabytes" class="form-control" type="number" min="1" max="25" />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label asp-for="Zero.BrowserSpeechRate" class="form-label fw-bold small">Browser Speech Rate</label>
+                                            <input asp-for="Zero.BrowserSpeechRate" class="form-control" type="number" step="0.01" min="0.5" max="2" />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label asp-for="Zero.BrowserSpeechPitch" class="form-label fw-bold small">Browser Speech Pitch</label>
+                                            <input asp-for="Zero.BrowserSpeechPitch" class="form-control" type="number" step="0.01" min="0.5" max="2" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="settings-form-actions">
+                                    <button type="submit" class="btn btn-primary px-4">
+                                        <i class="bi bi-check-lg"></i> Save Zero Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="tab-pane fade settings-tab-pane @(isIntegrationTab ? "show active" : string.Empty)" id="settings-integration" role="tabpanel" aria-labelledby="settings-integration-tab" tabindex="0">
+                            <form asp-action="SaveIntegration" method="post" id="integrationSettingsForm" class="settings-section settings-form">
+                                @Html.AntiForgeryToken()
+                                <div class="settings-section-head">
+                                    <div>
+                                        <div class="management-kicker">External Workspace</div>
+                                        <h5 class="mb-1 fw-bold">Google Email & Calendar</h5>
+                                        <p class="text-muted mb-0">Connect one Google workspace account so the app and AI can read inbox and calendar context through approved tools.</p>
+                                    </div>
+                                </div>
+
+                                <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
+
+                                <div class="settings-card-block">
+                                    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                                        <div>
+                                            <div class="fw-bold">Connection Status</div>
+                                            <div class="small text-muted">
+                                                @(Model.Integration.IsConnected
+                                                    ? $"Connected to {Model.Integration.ConnectedEmail ?? "Google account"}"
+                                                    : "No Google account linked yet.")
+                                            </div>
+                                        </div>
+                                        <span class="badge @(Model.Integration.IsConnected ? "bg-success-subtle text-success" : "bg-light text-muted") px-3 py-2 rounded-pill">
+                                            @(Model.Integration.IsConnected ? "Connected" : "Not connected")
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="settings-card-block">
+                                    <div class="row g-4">
+                                        <div class="col-md-4">
+                                            <div class="form-check form-switch">
+                                                <input asp-for="Integration.IsEnabled" class="form-check-input" type="checkbox" />
+                                                <label asp-for="Integration.IsEnabled" class="form-check-label fw-bold small">Enable Google integration</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <label asp-for="Integration.ClientId" class="form-label fw-bold small">Google OAuth Client Id</label>
+                                            <input asp-for="Integration.ClientId" class="form-control" placeholder="Paste your Google OAuth web client id" />
+                                            <span asp-validation-for="Integration.ClientId" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <label asp-for="Integration.PublicBaseUrl" class="form-label fw-bold small">Public App URL</label>
+                                            <input asp-for="Integration.PublicBaseUrl" class="form-control" placeholder="https://your-domain.com/schedule" />
+                                            <div class="form-text">Use the exact deployed app root. Leave blank only when IIS request URL already matches the public URL.</div>
+                                            <span asp-validation-for="Integration.PublicBaseUrl" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <label asp-for="Integration.ClientSecret" class="form-label fw-bold small">Google OAuth Client Secret</label>
+                                            <input asp-for="Integration.ClientSecret" class="form-control" placeholder="Leave blank to keep existing secret" />
+                                            <div class="form-text">Configure the Google OAuth web app redirect URI as <code>@Model.Integration.RedirectUri</code></div>
+                                        </div>
+                                        <div class="col-md-4 d-flex align-items-end">
+                                            <div class="form-check form-switch">
+                                                <input asp-for="Integration.ClearClientSecret" class="form-check-input" type="checkbox" />
+                                                <label asp-for="Integration.ClearClientSecret" class="form-check-label fw-bold small">Clear saved secret</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label asp-for="Integration.ScopeSet" class="form-label fw-bold small">Google Scopes</label>
+                                            <input asp-for="Integration.ScopeSet" class="form-control" />
+                                            <span asp-validation-for="Integration.ScopeSet" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="settings-card-block">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <div class="form-check form-switch">
+                                                <input asp-for="Integration.EnableEmailIntegration" class="form-check-input" type="checkbox" />
+                                                <label asp-for="Integration.EnableEmailIntegration" class="form-check-label fw-bold small">Inbox access</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check form-switch">
+                                                <input asp-for="Integration.EnableCalendarIntegration" class="form-check-input" type="checkbox" />
+                                                <label asp-for="Integration.EnableCalendarIntegration" class="form-check-label fw-bold small">Calendar access</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check form-switch">
+                                                <input asp-for="Integration.EnableAiEmailTools" class="form-check-input" type="checkbox" />
+                                                <label asp-for="Integration.EnableAiEmailTools" class="form-check-label fw-bold small">Expose AI email tools</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check form-switch">
+                                                <input asp-for="Integration.EnableAiCalendarTools" class="form-check-input" type="checkbox" />
+                                                <label asp-for="Integration.EnableAiCalendarTools" class="form-check-label fw-bold small">Expose AI calendar tools</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label asp-for="Integration.InboxCacheLimit" class="form-label fw-bold small">Local inbox cache</label>
+                                            <input asp-for="Integration.InboxCacheLimit" class="form-control" type="number" min="10" max="500" step="10" />
+                                            <div class="form-text">Keep this many recent inbox messages per linked user for fast Email Hub loading.</div>
+                                            <span asp-validation-for="Integration.InboxCacheLimit" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="settings-card-block">
+                                    <div class="row g-4 align-items-end">
+                                        <div class="col-md-8">
+                                            <div class="small text-muted mb-2">Use the setup flow below after saving client credentials.</div>
+                                            <div class="small text-muted">Connected email: <strong>@(Model.Integration.ConnectedEmail ?? "None")</strong></div>
+                                            <div class="small text-muted">Connected at: <strong>@(Model.Integration.ConnectedAtUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "Not connected")</strong></div>
+                                            <div class="small text-muted">Last sync: <strong>@(Model.Integration.LastSyncUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "No sync yet")</strong></div>
+                                        </div>
+                                        <div class="col-md-4 d-flex gap-2 justify-content-md-end flex-wrap">
+                                            <button type="submit" class="btn btn-primary px-4">
+                                                <i class="bi bi-save"></i> Save Integration
+                                            </button>
+                                        </div>
+                                        <div class="col-12 d-flex gap-2 flex-wrap">
+                                            <button type="submit" class="btn btn-outline-primary" formaction="@Url.Action("GoogleSignIn", "Account")" formmethod="post" name="returnUrl" value="@Url.Action("Index", "Settings", new { tab = "integration" })" @(Model.Integration.IsEnabled && !string.IsNullOrWhiteSpace(Model.Integration.ClientId) ? null : "disabled")>
+                                                <i class="bi bi-google"></i> Link Google Account
+                                            </button>
+                                            <button type="submit" class="btn btn-outline-danger" formaction="@Url.Action("Disconnect", "GoogleIntegration")" formmethod="post" @(Model.Integration.IsConnected ? null : "disabled")>
+                                                <i class="bi bi-x-circle"></i> Disconnect Account
+                                            </button>
+                                            <a asp-controller="EmailHub" asp-action="Index" class="btn btn-outline-secondary">
+                                                <i class="bi bi-envelope-paper"></i> Open Email Hub
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="tab-pane fade settings-tab-pane @(isDatabaseTab ? "show active" : string.Empty)" id="settings-database" role="tabpanel" aria-labelledby="settings-database-tab" tabindex="0">
+                            <form method="post" id="databaseSettingsForm" class="settings-section settings-form">
+                                @Html.AntiForgeryToken()
+                                <div class="settings-section-head">
+                                    <div>
+                                        <div class="management-kicker">Data Storage</div>
+                                        <h5 class="mb-1 fw-bold">PostgreSQL Operational Database</h5>
+                                        <p class="text-muted mb-0">SQLite stays for configuration. Use PostgreSQL for operational data after connection and migration are verified.</p>
+                                    </div>
+                                    <span class="badge @(Model.Database.IsEnabled ? "bg-success-subtle text-success" : "bg-light text-muted") px-3 py-2 rounded-pill">
+                                        @(Model.Database.IsEnabled ? "Enabled" : "Disabled")
+                                    </span>
+                                </div>
+
+                                <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
+
+                                @if (Model.DatabaseTestResult != null)
+                                {
+                                    <div class="settings-card-block">
+                                        <div class="d-flex align-items-start gap-2">
+                                            <i class="bi @(Model.DatabaseTestResult.Success ? "bi-check-circle-fill text-success" : "bi-exclamation-triangle-fill text-danger") mt-1"></i>
+                                            <div>
+                                                <div class="fw-bold small">@Model.DatabaseTestResult.Message</div>
+                                                @if (Model.DatabaseTestResult.Success)
+                                                {
+                                                    <div class="small text-muted mt-1">Database: <strong>@Model.DatabaseTestResult.Database</strong> - User: <strong>@Model.DatabaseTestResult.User</strong></div>
+                                                    <div class="small text-muted">@Model.DatabaseTestResult.ServerVersion</div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+
+                                @if (TempData["DatabaseOperationalSync"] is string databaseOperationalSync)
+                                {
+                                    <div class="settings-card-block">
+                                        <div class="d-flex align-items-start gap-2">
+                                            <i class="bi bi-database-check text-success mt-1"></i>
+                                            <div class="fw-bold small">@databaseOperationalSync</div>
+                                        </div>
+                                    </div>
+                                }
+
+                                @if (TempData["DatabaseOperationalSyncError"] is string databaseOperationalSyncError)
+                                {
+                                    <div class="settings-card-block">
+                                        <div class="d-flex align-items-start gap-2">
+                                            <i class="bi bi-database-exclamation text-danger mt-1"></i>
+                                            <div class="fw-bold small">@databaseOperationalSyncError</div>
+                                        </div>
+                                    </div>
+                                }
+
+                                <div class="settings-card-block">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-md-4">
+                                            <div class="form-check form-switch">
+                                                <input asp-for="Database.IsEnabled" class="form-check-input" type="checkbox" />
+                                                <label asp-for="Database.IsEnabled" class="form-check-label fw-bold small">Enable PostgreSQL target</label>
+                                            </div>
+                                            <div class="form-text">Events use PostgreSQL when it is reachable; otherwise Progress falls back to SQLite.</div>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label asp-for="Database.Host" class="form-label fw-bold small">Host</label>
+                                            <input asp-for="Database.Host" class="form-control" placeholder="localhost" />
+                                            <span asp-validation-for="Database.Host" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label asp-for="Database.Port" class="form-label fw-bold small">Port</label>
+                                            <input asp-for="Database.Port" class="form-control" type="number" min="1" max="65535" />
+                                            <span asp-validation-for="Database.Port" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label asp-for="Database.DatabaseName" class="form-label fw-bold small">Database</label>
+                                            <input asp-for="Database.DatabaseName" class="form-control" />
+                                            <span asp-validation-for="Database.DatabaseName" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label asp-for="Database.Username" class="form-label fw-bold small">Username</label>
+                                            <input asp-for="Database.Username" class="form-control" autocomplete="username" />
+                                            <span asp-validation-for="Database.Username" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label asp-for="Database.Password" class="form-label fw-bold small">Password</label>
+                                            <input asp-for="Database.Password" class="form-control" type="password" autocomplete="new-password" placeholder="Leave blank to keep existing" />
+                                            <div class="form-text">Current: @(Model.Database.HasPassword ? "configured" : "not configured")</div>
+                                            <span asp-validation-for="Database.Password" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label asp-for="Database.SslMode" class="form-label fw-bold small">SSL Mode</label>
+                                            <select asp-for="Database.SslMode" class="form-select">
+                                                @foreach (var mode in new[] { "Disable", "Allow", "Prefer", "Require", "VerifyCA", "VerifyFull" })
+                                                {
+                                                    <option value="@mode">@mode</option>
+                                                }
+                                            </select>
+                                            <span asp-validation-for="Database.SslMode" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check form-switch pt-md-4">
+                                                <input asp-for="Database.ClearPassword" class="form-check-input" type="checkbox" />
+                                                <label asp-for="Database.ClearPassword" class="form-check-label fw-bold small">Clear saved password</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 text-md-end">
+                                            <div class="small text-muted pt-md-4">Last saved: <strong>@(Model.Database.UpdatedAtUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "Not saved")</strong></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="settings-form-actions gap-2 flex-wrap">
+                                    <button type="submit" class="btn btn-outline-primary px-4" formaction="@Url.Action("TestDatabase", "Settings")">
+                                        <i class="bi bi-plug"></i> Test Connection
+                                    </button>
+                                    <button type="submit" class="btn btn-primary px-4" formaction="@Url.Action("SaveDatabase", "Settings")">
+                                        <i class="bi bi-save"></i> Save Database
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="tab-pane fade settings-tab-pane @(isMarketDataTab ? "show active" : string.Empty)" id="settings-market-data" role="tabpanel" aria-labelledby="settings-market-data-tab" tabindex="0">
+                            <form method="post" id="marketDataSettingsForm" class="settings-section settings-form">
+                                @Html.AntiForgeryToken()
+                                <div class="settings-section-head">
+                                    <div>
+                                        <div class="management-kicker">Trading Infrastructure</div>
+                                        <h5 class="mb-1 fw-bold">Market Data Providers</h5>
+                                        <p class="text-muted mb-0">Configure the primary price provider for the Trading module directly from the admin UI.</p>
+                                    </div>
+                                </div>
+
+                                @if (Model.MarketDataTestResult != null)
+                                {
+                                    <div class="settings-card-block">
+                                        <div class="d-flex align-items-start gap-2">
+                                            <i class="bi @(Model.MarketDataTestResult.Success ? "bi-check-circle-fill text-success" : "bi-exclamation-triangle-fill text-danger") mt-1"></i>
+                                            <div>
+                                                <div class="fw-bold small">@Model.MarketDataTestResult.Message</div>
+                                                <div class="small text-muted">Provider: <strong>@Model.MarketDataTestResult.ProviderName</strong> - Status: <strong>@Model.MarketDataTestResult.Status</strong></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+
+                                <div class="settings-card-block">
+                                    <div class="alert alert-warning mb-0">
+                                        This page controls advisory market data only. Broker logins and trade execution are not supported.
+                                    </div>
+                                </div>
+
+                                <div class="d-flex flex-column gap-3">
+                                    @for (var i = 0; i < Model.MarketData.Providers.Count; i++)
+                                    {
+                                        var provider = Model.MarketData.Providers[i];
+                                        <div class="settings-card-block">
+                                            <input asp-for="MarketData.Providers[i].Id" type="hidden" />
+                                            <input asp-for="MarketData.Providers[i].ProviderName" type="hidden" />
+                                            <input asp-for="MarketData.Providers[i].ProviderLabel" type="hidden" />
+                                            <input asp-for="MarketData.Providers[i].HasApiKey" type="hidden" />
+                                            <input asp-for="MarketData.Providers[i].MaskedApiKey" type="hidden" />
+                                            <input asp-for="MarketData.Providers[i].SupportsApiKey" type="hidden" />
+                                            <input asp-for="MarketData.Providers[i].IsExperimental" type="hidden" />
+                                            <input asp-for="MarketData.Providers[i].LastTestResult" type="hidden" />
+                                            <input asp-for="MarketData.Providers[i].LastTestDate" type="hidden" />
+
+                                            <div class="row g-3 align-items-start">
+                                                <div class="col-lg-3">
+                                                    <div class="fw-bold">@provider.ProviderLabel</div>
+                                                    <div class="small text-muted">Status: @provider.Status</div>
+                                                    <div class="small text-muted">Last Test: @(provider.LastTestDate?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "Never")</div>
+                                                </div>
+                                                <div class="col-lg-3">
+                                                    <div class="form-check form-switch mb-2">
+                                                        <input asp-for="MarketData.Providers[i].IsEnabled" class="form-check-input" type="checkbox" />
+                                                        <label asp-for="MarketData.Providers[i].IsEnabled" class="form-check-label fw-bold small">Enabled</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="MarketData.Providers.PrimarySelection" value="@provider.ProviderName" @(provider.IsPrimary ? "checked" : null) data-primary-radio />
+                                                        <input asp-for="MarketData.Providers[i].IsPrimary" type="hidden" value="@provider.IsPrimary.ToString().ToLowerInvariant()" />
+                                                        <label class="form-check-label fw-bold small">Primary provider</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-4">
+                                                    @if (provider.SupportsApiKey)
+                                                    {
+                                                        <label asp-for="MarketData.Providers[i].ApiKey" class="form-label fw-bold small">API Key</label>
+                                                        <input asp-for="MarketData.Providers[i].ApiKey" class="form-control" type="password" autocomplete="new-password" placeholder="Leave blank to keep existing" />
+                                                        <div class="form-text">Current: @provider.MaskedApiKey</div>
+                                                        <div class="form-check mt-2">
+                                                            <input asp-for="MarketData.Providers[i].ClearApiKey" class="form-check-input" type="checkbox" />
+                                                            <label asp-for="MarketData.Providers[i].ClearApiKey" class="form-check-label small">Clear saved key</label>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="small text-muted pt-4">This provider does not require an API key.</div>
+                                                    }
+                                                    @if (provider.IsExperimental)
+                                                    {
+                                                        <div class="alert alert-warning py-2 px-3 mt-3 mb-0 small">Experimental provider. Response format may change without notice.</div>
+                                                    }
+                                                </div>
+                                                <div class="col-lg-2">
+                                                    <label asp-for="MarketData.Providers[i].Notes" class="form-label fw-bold small">Notes</label>
+                                                    <textarea asp-for="MarketData.Providers[i].Notes" class="form-control" rows="3"></textarea>
+                                                </div>
+                                            </div>
+
+                                            <div class="d-flex justify-content-between align-items-center gap-2 mt-3 flex-wrap">
+                                                <div class="small text-muted">Last result: <strong>@(string.IsNullOrWhiteSpace(provider.LastTestResult) ? "Not tested" : provider.LastTestResult)</strong></div>
+                                                <button type="submit" class="btn btn-outline-primary btn-sm" formaction="@Url.Action("TestMarketData", "Settings", new { providerName = provider.ProviderName })">
+                                                    <i class="bi bi-plug"></i> Test Connection
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="settings-form-actions">
+                                    <button type="submit" class="btn btn-primary px-4" formaction="@Url.Action("SaveMarketData", "Settings")">
+                                        <i class="bi bi-save"></i> Save Market Data
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form asp-action="GenerateMcpApiKey" method="post" id="generateMcpApiKeyForm" class="d-none">
+    @Html.AntiForgeryToken()
+</form>
+
+@foreach (var key in Model.Mcp.Keys.Where(item => item.IsActive))
+{
+    <form asp-action="RevokeMcpApiKey" method="post" id="revokeMcpApiKeyForm-@key.Id" class="d-none">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@key.Id" />
+    </form>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('#settings-tabs [data-bs-toggle="pill"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function (event) {
+                const target = event.target.getAttribute('data-bs-target');
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', target === '#settings-ai'
+                    ? 'ai'
+                    : target === '#settings-integration'
+                        ? 'integration'
+                        : target === '#settings-database'
+                            ? 'database'
+                            : target === '#settings-market-data'
+                                ? 'market-data'
+                            : 'display');
+                history.replaceState({}, '', url);
+            });
+        });
+
+        (function () {
+            const form = document.getElementById('marketDataSettingsForm');
+            if (!form) {
+                return;
+            }
+
+            const radios = form.querySelectorAll('[data-primary-radio]');
+            function syncPrimaryFlags() {
+                radios.forEach(radio => {
+                    const card = radio.closest('.settings-card-block');
+                    const hidden = card?.querySelector('input[name$=".IsPrimary"][type="hidden"]');
+                    if (hidden) {
+                        hidden.value = radio.checked ? 'true' : 'false';
+                    }
+                });
+            }
+
+            radios.forEach(radio => radio.addEventListener('change', syncPrimaryFlags));
+            syncPrimaryFlags();
+        })();
+
+        (function () {
+            const zeroSettingsPanel = document.querySelector('[data-zero-settings-panel]');
+            const aiSubtabs = document.querySelectorAll('.settings-subtabs-nav [data-bs-toggle="pill"]');
+
+            function syncZeroSettingsPanel() {
+                if (!zeroSettingsPanel) {
+                    return;
+                }
+
+                const activeSubtab = document.querySelector('.settings-subtabs-nav .btn.active');
+                const target = activeSubtab?.getAttribute('data-bs-target');
+                zeroSettingsPanel.hidden = target !== '#ai-config-panel';
+            }
+
+            aiSubtabs.forEach(tab => {
+                tab.addEventListener('shown.bs.tab', syncZeroSettingsPanel);
+            });
+            syncZeroSettingsPanel();
+        })();
+
+        (function () {
+            const provider = document.querySelector('[data-ai-provider]');
+            const endpoint = document.querySelector('[data-ai-endpoint]');
+            const apiKey = document.querySelector('[data-ai-api-key]');
+            const model = document.querySelector('[data-ai-model]');
+            const loadButton = document.querySelector('[data-ai-load-models]');
+            const testButton = document.querySelector('[data-ai-test]');
+            const testMessage = document.querySelector('[data-ai-test-message]');
+            const testBadge = document.querySelector('[data-ai-test-badge]');
+
+            if (!provider || !endpoint || !model || !loadButton || !testButton) {
+                return;
+            }
+
+            function setHealthState(isHealthy, message) {
+                if (testMessage) {
+                    testMessage.textContent = message || '';
+                }
+
+                if (testBadge) {
+                    testBadge.textContent = isHealthy ? 'Online' : 'Offline';
+                    testBadge.classList.toggle('bg-success-subtle', isHealthy);
+                    testBadge.classList.toggle('text-success', isHealthy);
+                    testBadge.classList.toggle('bg-light', !isHealthy);
+                    testBadge.classList.toggle('text-muted', !isHealthy);
+                }
+            }
+
+            async function loadModels(preserveCurrent) {
+                const currentValue = preserveCurrent ? (model.value || model.dataset.currentValue || '') : '';
+                const url = new URL('@Url.Action("AiModels", "Settings")', window.location.origin);
+                url.searchParams.set('providerType', provider.value);
+                url.searchParams.set('endpointUrl', endpoint.value);
+                if (currentValue) {
+                    url.searchParams.set('modelId', currentValue);
+                }
+                if (apiKey && apiKey.value && apiKey.value !== 'configured') {
+                    url.searchParams.set('apiKey', apiKey.value);
+                }
+
+                loadButton.disabled = true;
+                loadButton.textContent = 'Loading...';
+
+                try {
+                    const response = await fetch(url);
+                    const payload = await response.json();
+                    const models = Array.isArray(payload.models) ? payload.models : [];
+                    model.innerHTML = '';
+
+                    if (models.length === 0) {
+                        const option = document.createElement('option');
+                        option.value = currentValue;
+                        option.textContent = currentValue || 'No models found';
+                        model.appendChild(option);
+                        setHealthState(false, payload.error || 'No models returned from endpoint.');
+                        return;
+                    }
+
+                    models.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item;
+                        option.textContent = item;
+                        option.selected = item === currentValue;
+                        model.appendChild(option);
+                    });
+
+                    if (!model.value && models[0]) {
+                        model.value = models[0];
+                    }
+
+                    model.dataset.currentValue = model.value;
+                    setHealthState(true, 'Model list loaded from endpoint.');
+                } catch {
+                    setHealthState(false, 'Failed to load models from the configured endpoint.');
+                } finally {
+                    loadButton.disabled = false;
+                    loadButton.textContent = 'Load Models';
+                }
+            }
+
+            async function testAi() {
+                const url = new URL('@Url.Action("TestAi", "Settings")', window.location.origin);
+                url.searchParams.set('providerType', provider.value);
+                url.searchParams.set('endpointUrl', endpoint.value);
+                url.searchParams.set('modelId', model.value);
+                if (apiKey && apiKey.value && apiKey.value !== 'configured') {
+                    url.searchParams.set('apiKey', apiKey.value);
+                }
+
+                testButton.disabled = true;
+                testButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Testing...';
+
+                try {
+                    const response = await fetch(url);
+                    const payload = await response.json();
+                    setHealthState(Boolean(payload.healthy), payload.message || 'No response from provider.');
+                } catch {
+                    setHealthState(false, 'Failed to test the configured provider.');
+                } finally {
+                    testButton.disabled = false;
+                    testButton.innerHTML = '<i class="bi bi-plug"></i> Test AI';
+                }
+            }
+
+            provider.addEventListener('change', () => loadModels(false));
+            endpoint.addEventListener('change', () => loadModels(true));
+            model.addEventListener('change', () => {
+                model.dataset.currentValue = model.value;
+            });
+            loadButton.addEventListener('click', () => loadModels(true));
+            testButton.addEventListener('click', testAi);
+
+            if (provider.value === '@((int)ScheduleApp.Models.AiProviderType.Ollama)' && endpoint.value) {
+                loadModels(true);
+            }
+        })();
+    </script>
+}

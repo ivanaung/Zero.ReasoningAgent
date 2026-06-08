@@ -1,0 +1,440 @@
+﻿@inject ScheduleApp.Services.ISettingsService SettingsService
+@inject ScheduleApp.Services.ICurrentUserService CurrentUserService
+@inject IConfiguration Configuration
+@using System.Security.Claims
+@{
+    var userSettings = await SettingsService.GetSettingsAsync();
+    var isDemoMode = Configuration.GetValue<bool>("DemoMode");
+    var currentUserEmail = User.FindFirstValue(ClaimTypes.Email);
+    var notificationsUrl = Url.Action("Notifications", "Proactive");
+    var notificationSnoozeBaseUrl = Url.Action("Snooze", "Proactive", new { notificationId = "__id__" });
+    var notificationDismissBaseUrl = Url.Action("Dismiss", "Proactive", new { notificationId = "__id__" });
+    var timezones = new Dictionary<string, string> {
+        {"Pacific/Auckland", "Auckland"},
+        {"Australia/Sydney", "Sydney"},
+        {"Asia/Tokyo", "Tokyo"},
+        {"Asia/Singapore", "Singapore"},
+        {"Asia/Yangon", "Yangon"},
+        {"Asia/Dubai", "Dubai"},
+        {"Europe/Paris", "Paris"},
+        {"Europe/Berlin", "Berlin"},
+        {"Europe/London", "London"},
+        {"America/New_York", "New York"},
+        {"America/Chicago", "Chicago"},
+        {"America/Denver", "Denver"},
+        {"America/Los_Angeles", "Los Angeles"}
+    };
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Zero - A Local-First Reasoning Agent</title>
+
+    <link rel="icon" href="~/img/favicon.ico" sizes="any" asp-append-version="true" />
+    <link rel="apple-touch-icon" href="~/img/apple-touch-icon.png" asp-append-version="true" />
+    <link rel="manifest" href="~/site.webmanifest" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/coloris.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    @await RenderSectionAsync("PageStyles", required: false)
+</head>
+<body>
+    <div class="app-container">
+        <aside id="sidebar">
+            <div class="sidebar-top">
+                <div class="sidebar-brand">
+                    <span class="brand-mark">
+                        <img src="~/img/butlerzero.png" alt="Zero logo" asp-append-version="true" />
+                    </span>
+                    <span>Zero<br /><small class="text-muted fw-semibold">Local-first reasoning agent</small></span>
+                </div>
+                <button class="collapse-toggle" id="sidebarCollapse" type="button" aria-label="Collapse sidebar">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            </div>
+
+            <div class="flex-grow-1 overflow-auto overflow-hidden">
+               <nav class="nav flex-column">
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-columns-gap"></i> <span>Dashboard</span>
+                    </a>
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Board" ? "active" : "")" asp-controller="Board" asp-action="Index">
+                        <i class="bi bi-grid-1x2-fill"></i> <span>Tasks</span>
+                    </a>
+                    <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() == "Events" && (ViewContext.RouteData.Values["action"]?.ToString() == "Day" || ViewContext.RouteData.Values["action"]?.ToString() == "Index")) ? "active" : "")" asp-controller="Events" asp-action="Index">
+                        <i class="bi bi-calendar3"></i> <span>Calendar</span>
+                    </a>
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "EmailHub" ? "active" : "")" asp-controller="EmailHub" asp-action="Index">
+                        <i class="bi bi-envelope-paper"></i> <span>Email Hub</span>
+                    </a>
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Finance" ? "active" : "")" asp-controller="Finance" asp-action="Index">
+                        <i class="bi bi-cash-coin"></i> <span>Finance</span>
+                    </a>
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "ZeroAssistant" ? "active" : "")" asp-controller="ZeroAssistant" asp-action="Index" target="_blank" rel="noopener">
+                        <i class="bi bi-stars"></i> <span>Zero Chat</span>
+                    </a>
+                </nav>              
+                <nav class="nav flex-column">
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Search" ? "active" : "")" asp-controller="Search" asp-action="Index">
+                        <i class="bi bi-search"></i> <span>Search</span>
+                    </a>
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Settings" ? "active" : "")" asp-controller="Settings" asp-action="Index">
+                        <i class="bi bi-gear-fill"></i> <span>Settings</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="sidebar-footer">
+                @if (CurrentUserService.IsAuthenticated)
+                {
+                    <div class="sidebar-account-panel">
+                        <div class="sidebar-account-summary" title="@(currentUserEmail ?? CurrentUserService.DisplayName)">
+                            <span class="sidebar-account-name">@CurrentUserService.DisplayName</span>                            
+                        </div>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="sidebar-account-form">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="sidebar-footer-link" title="Logout">
+                                <i class="bi bi-box-arrow-right"></i>
+                                <span>Logout</span>
+                            </button>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login" class="sidebar-footer-link" title="Sign In">
+                        <i class="bi bi-google"></i>
+                        <span>Sign In</span>
+                    </a>
+                }
+            </div>
+        </aside>
+
+        <main class="main-viewport">
+            <header class="app-header">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn icon-btn btn-light d-lg-none" id="sidebarToggle" type="button" aria-label="Open sidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div class="page-heading">
+                        <span class="page-kicker">
+                            Zero Reasoning Agent
+                            @if (isDemoMode)
+                            {
+                                <span class="badge text-bg-warning ms-2">Demo Mode</span>
+                            }
+                        </span>
+                        <h6 class="mb-0 fw-bold">@ViewData["Title"]</h6>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center justify-content-center flex-grow-1 gap-4 text-center header-clocks d-none d-md-flex px-3" style="min-width: 0;">
+                    @if (!string.IsNullOrEmpty(userSettings.Clock1TimeZone)) {
+                        <div class="world-clock text-start">
+                            <div class="text-uppercase text-muted fw-bold" style="font-size: 0.6rem; letter-spacing: 0.05em; line-height: 1;">@timezones.GetValueOrDefault(userSettings.Clock1TimeZone, userSettings.Clock1TimeZone.Split('/').Last().Replace("_", " "))</div>
+                            <div class="fw-bold" style="font-size: 0.9rem; line-height: 1.2;" data-timezone="@userSettings.Clock1TimeZone">--:--</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(userSettings.Clock2TimeZone)) {
+                        <div class="world-clock text-start">
+                            <div class="text-uppercase text-muted fw-bold" style="font-size: 0.6rem; letter-spacing: 0.05em; line-height: 1;">@timezones.GetValueOrDefault(userSettings.Clock2TimeZone, userSettings.Clock2TimeZone.Split('/').Last().Replace("_", " "))</div>
+                            <div class="fw-bold" style="font-size: 0.9rem; line-height: 1.2;" data-timezone="@userSettings.Clock2TimeZone">--:--</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(userSettings.Clock3TimeZone)) {
+                        <div class="world-clock text-start">
+                            <div class="text-uppercase text-muted fw-bold" style="font-size: 0.6rem; letter-spacing: 0.05em; line-height: 1;">@timezones.GetValueOrDefault(userSettings.Clock3TimeZone, userSettings.Clock3TimeZone.Split('/').Last().Replace("_", " "))</div>
+                            <div class="fw-bold" style="font-size: 0.9rem; line-height: 1.2;" data-timezone="@userSettings.Clock3TimeZone">--:--</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(userSettings.Clock4TimeZone)) {
+                        <div class="world-clock text-start">
+                            <div class="text-uppercase text-muted fw-bold" style="font-size: 0.6rem; letter-spacing: 0.05em; line-height: 1;">@timezones.GetValueOrDefault(userSettings.Clock4TimeZone, userSettings.Clock4TimeZone.Split('/').Last().Replace("_", " "))</div>
+                            <div class="fw-bold" style="font-size: 0.9rem; line-height: 1.2;" data-timezone="@userSettings.Clock4TimeZone">--:--</div>
+                        </div>
+                    }
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-light icon-btn" type="button" onclick="window.location.reload();" aria-label="Refresh page" title="Refresh Page">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-light icon-btn" type="button" data-bs-toggle="dropdown" aria-label="Open notification center" id="notificationCenterToggle">
+                            <i class="bi bi-bell"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end notification-center-menu p-0" id="notificationCenterMenu">
+                            <div class="notification-center-head px-3 py-3 border-bottom">
+                                <div class="management-kicker">Proactive Assist</div>
+                                <strong>Notifications</strong>
+                            </div>
+                            <div class="notification-center-body" id="notificationCenterItems">
+                                <div class="px-3 py-3 text-muted small">Loading notifications...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <a asp-controller="Events" asp-action="Create" class="btn btn-primary" data-event-modal-url="@Url.Action("Create", "Events")" data-event-modal-title="New Task">
+                        <i class="bi bi-plus-lg"></i> New Task
+                    </a>
+                </div>
+            </header>
+
+            <div class="app-content @(ViewData["AppContentClass"])">
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+
+    <div class="modal fade" id="eventEditorModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0 px-4 pt-4">
+                    <div>
+                        <div class="page-kicker">Task editor</div>
+                        <h5 class="modal-title fw-bold mb-0" id="eventEditorModalTitle">Task</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 pb-4" id="eventEditorModalBody">
+                    <div class="d-flex align-items-center justify-content-center py-5 text-muted">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+    <script src="~/js/coloris.js" asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        $(document).ready(function () {
+            const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+            if (isCollapsed) $('#sidebar').addClass('collapsed');
+
+            $('#sidebarCollapse').on('click', function () {
+                const sidebar = $('#sidebar');
+                sidebar.toggleClass('collapsed');
+                localStorage.setItem('sidebar-collapsed', sidebar.hasClass('collapsed'));
+            });
+
+            $('#sidebarToggle').on('click', function () {
+                $('#sidebar').toggleClass('show');
+            });
+        });
+
+        window.refreshScheduleSurface = function () {
+            if (typeof window.refreshCalendarEvents === 'function') {
+                window.refreshCalendarEvents();
+                return;
+            }
+
+            window.location.reload();
+        };
+
+        window.initialiseEventForm = function (container) {
+            if (window.jQuery && $.validator && $.validator.unobtrusive) {
+                $.validator.unobtrusive.parse(container);
+            }
+
+            const firstInput = container.querySelector('input, textarea, select');
+            if (firstInput) {
+                setTimeout(() => firstInput.focus(), 120);
+            }
+        };
+
+        window.openEventModal = async function (url, title) {
+            const modalElement = document.getElementById('eventEditorModal');
+            const modalBody = document.getElementById('eventEditorModalBody');
+            const modalTitle = document.getElementById('eventEditorModalTitle');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+
+            modalTitle.textContent = title || 'Task';
+            modalBody.innerHTML = '<div class="d-flex align-items-center justify-content-center py-5 text-muted">Loading...</div>';
+            modal.show();
+
+            const requestUrl = url + (url.includes('?') ? '&' : '?') + 'modal=1';
+            const response = await fetch(requestUrl, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            modalBody.innerHTML = await response.text();
+            window.initialiseEventForm(modalBody);
+        };
+
+        document.addEventListener('click', function (event) {
+            const trigger = event.target.closest('[data-event-modal-url]');
+            if (!trigger) {
+                return;
+            }
+
+            event.preventDefault();
+            window.openEventModal(trigger.getAttribute('data-event-modal-url'), trigger.getAttribute('data-event-modal-title'));
+        });
+
+        document.addEventListener('click', function (event) {
+            const emojiButton = event.target.closest('.emoji-opt');
+            if (!emojiButton) {
+                return;
+            }
+
+            const shell = emojiButton.closest('.event-form-shell') || document;
+            const iconInput = shell.querySelector('input[name="Icon"]');
+            if (iconInput) {
+                iconInput.value = emojiButton.textContent.trim();
+            }
+        });
+
+        document.addEventListener('submit', async function (event) {
+            const form = event.target.closest('.event-modal-form, .event-modal-delete-form');
+            if (!form) {
+                return;
+            }
+
+            const modalInput = form.querySelector('input[name="modal"]');
+            if (!modalInput || modalInput.value !== '1') {
+                return;
+            }
+
+            if (form.classList.contains('event-modal-delete-form')) {
+                const confirmMessage = document.querySelector('[form="' + form.id + '"]')?.getAttribute('data-confirm') || 'Delete this task permanently?';
+                if (!window.confirm(confirmMessage)) {
+                    event.preventDefault();
+                    return;
+                }
+            }
+
+            event.preventDefault();
+
+            const modalBody = document.getElementById('eventEditorModalBody');
+            const response = await fetch(form.action, {
+                method: form.method || 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: new FormData(form)
+            });
+
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                const result = await response.json();
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('eventEditorModal'))?.hide();
+                    window.refreshScheduleSurface();
+                }
+                return;
+            }
+
+            modalBody.innerHTML = await response.text();
+            window.initialiseEventForm(modalBody);
+        });
+
+        async function loadNotificationCenter() {
+            const host = document.getElementById('notificationCenterItems');
+            if (!host) {
+                return;
+            }
+
+            try {
+                const response = await fetch('@Html.Raw(notificationsUrl)', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const items = await response.json();
+                host.innerHTML = '';
+
+                if (!Array.isArray(items) || items.length === 0) {
+                    host.innerHTML = '<div class="px-3 py-3 text-muted small">No current reminders.</div>';
+                    return;
+                }
+
+                items.slice(0, 8).forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'notification-center-item';
+                    row.innerHTML = `
+                        <div class="notification-center-copy">
+                            <strong>${item.notificationType}</strong>
+                            <span>${item.message || ''}</span>
+                            <small>${new Date(item.scheduledForUtc).toLocaleString()}</small>
+                        </div>
+                        <div class="notification-center-actions">
+                            <button class="btn btn-light btn-sm" type="button" data-snooze-id="${item.id}">Snooze</button>
+                            <button class="btn btn-light btn-sm" type="button" data-dismiss-id="${item.id}">Dismiss</button>
+                        </div>
+                    `;
+
+                    row.addEventListener('click', function (e) {
+                        if (e.target.closest('button')) {
+                            return;
+                        }
+                        if (item.actionUrl) {
+                            window.location.href = item.actionUrl;
+                        }
+                    });
+                    host.appendChild(row);
+                });
+            } catch {
+                host.innerHTML = '<div class="px-3 py-3 text-danger small">Failed to load notifications.</div>';
+            }
+        }
+
+        document.getElementById('notificationCenterToggle')?.addEventListener('click', function () {
+            loadNotificationCenter();
+        });
+
+        document.addEventListener('click', async function (event) {
+            const snooze = event.target.closest('[data-snooze-id]');
+            const dismiss = event.target.closest('[data-dismiss-id]');
+            if (!snooze && !dismiss) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const id = snooze?.getAttribute('data-snooze-id') || dismiss?.getAttribute('data-dismiss-id');
+            const endpoint = snooze
+                ? '@Html.Raw(notificationSnoozeBaseUrl)'.replace('__id__', encodeURIComponent(id)) + '?minutes=15'
+                : '@Html.Raw(notificationDismissBaseUrl)'.replace('__id__', encodeURIComponent(id));
+
+            await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            loadNotificationCenter();
+        });
+
+        // World clocks updater
+        function updateWorldClocks() {
+            const clocks = document.querySelectorAll('.world-clock [data-timezone]');
+            if (clocks.length === 0) return;
+            
+            const now = new Date();
+            clocks.forEach(el => {
+                const tz = el.getAttribute('data-timezone');
+                if (!tz) return;
+                try {
+                    const timeString = now.toLocaleTimeString('en-US', { 
+                        timeZone: tz, 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        hour12: false 
+                    });
+                    el.textContent = timeString;
+                } catch(e) {
+                    el.textContent = 'Err';
+                }
+            });
+        }
+        
+        setInterval(updateWorldClocks, 1000);
+        updateWorldClocks();
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+
