@@ -1,4 +1,4 @@
-# Zero - A Local-First Reasoning Agent
+﻿# Zero - A Local-First Reasoning Agent
 
 Zero is an ASP.NET Core web application that turns a personal productivity workspace into a local-first reasoning agent. It is built from the existing Progress application foundation and narrowed for a Microsoft Agents League contest demo around Zero Chat, memory, tasks, calendar, search, finance, email, settings, dashboard, and notifications.
 
@@ -102,7 +102,7 @@ Zero includes a notification center and proactive reminder workflow from the exi
 
 ## Demo Mode
 
-The application includes a visible Demo Mode flag in `ScheduleApp/appsettings.json`:
+The application includes a visible Demo Mode flag in `AgentZero/appsettings.json`:
 
 ```json
 "DemoMode": true
@@ -174,21 +174,21 @@ Open Settings and show the local assistant configuration, display preferences, i
 
 ## Architecture Overview
 
-Zero currently keeps the original `ScheduleApp` project name and namespaces to reduce migration risk during the contest foundation stage.
+The repository folder, solution, project folder, project file, and assembly are named `AgentZero`. The original `ScheduleApp` namespaces remain in code for now to reduce migration risk during the contest foundation stage.
 
 High-level structure:
 
-- `ScheduleApp/Controllers` - MVC controllers and API endpoints.
-- `ScheduleApp/Views` - Razor views for dashboard, tasks, calendar, finance, email, settings, search, and Zero Chat.
-- `ScheduleApp/Services` - Business logic for assistant workflows, local tools, memory, dashboard, notifications, finance, search, and settings.
-- `ScheduleApp/Data` - Entity Framework Core database context and data initialization.
-- `ScheduleApp/Models` - Domain models and view models.
-- `ScheduleApp/wwwroot` - Static CSS, JavaScript, icons, logos, and web manifest.
+- `AgentZero/Controllers` - MVC controllers and API endpoints.
+- `AgentZero/Views` - Razor views for dashboard, tasks, calendar, finance, email, settings, search, and Zero Chat.
+- `AgentZero/Services` - Business logic for assistant workflows, local tools, memory, dashboard, notifications, finance, search, and settings.
+- `AgentZero/Data` - Entity Framework Core database context and data initialization.
+- `AgentZero/Models` - Domain models and view models.
+- `AgentZero/wwwroot` - Static CSS, JavaScript, icons, logos, and web manifest.
 - `docs` - Contest scope, architecture notes, and demo scenario notes.
 
 ## Local-First Data
 
-The copied foundation uses SQLite for the local database. The application creates and uses app data under `ScheduleApp/App_Data`.
+The copied foundation uses SQLite for the local database. The application creates and uses app data under `AgentZero/App_Data`.
 
 The repo currently includes existing demo/local data where available. Additional seed data should only be added when existing data is not enough for a clear demo.
 
@@ -220,13 +220,13 @@ The repo currently includes existing demo/local data where available. Additional
 From the repository root:
 
 ```powershell
-dotnet build .\Zero.ReasoningAgent.sln
+dotnet build .\AgentZero.sln
 ```
 
 ### Run
 
 ```powershell
-dotnet run --project .\ScheduleApp\ScheduleApp.csproj
+dotnet run --project .\AgentZero\AgentZero.csproj
 ```
 
 Open the local URL printed by `dotnet run`.
@@ -236,7 +236,7 @@ Open the local URL printed by `dotnet run`.
 The application uses:
 
 ```text
-ScheduleApp/App_Data
+AgentZero/App_Data
 ```
 
 for local database-related runtime files, data protection keys, and logs.
@@ -286,7 +286,8 @@ Those integrations are intentionally deferred until the base contest project is 
 The solution builds successfully with:
 
 ```powershell
-dotnet build .\Zero.ReasoningAgent.sln
+dotnet build .\AgentZero.sln
 ```
 
-There is one existing warning in the copied Trading service about an unread `logger` parameter. Trading is hidden from the contest demo surface for now, and the warning does not block the build.
+
+

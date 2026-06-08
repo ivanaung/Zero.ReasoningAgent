@@ -1,4 +1,4 @@
-# Demo Scenarios
+﻿# Demo Scenarios
 
 ## Scenario 1: Local Priority Briefing
 
@@ -19,3 +19,4 @@ Open Finance or ask Zero for a finance summary. The goal is to show practical re
 ## Scenario 5: Demo Mode Walkthrough
 
 Point out the visible Demo Mode badge, open Settings, and show that the demo is intentionally scoped to the contest-focused local reasoning workflow.
+

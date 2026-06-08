@@ -1,8 +1,8 @@
-# Contest Scope
+﻿# Contest Scope
 
 ## Product
 
-Zero – A Local-First Reasoning Agent
+Zero â€“ A Local-First Reasoning Agent
 
 ## Scope For This Foundation
 
@@ -43,3 +43,4 @@ Hidden or excluded from the visible demo surface:
 - Deep deletion of internal code paths
 
 The current cleanup prefers hiding non-demo surfaces instead of deleting internals so the copied app remains buildable and runnable.
+

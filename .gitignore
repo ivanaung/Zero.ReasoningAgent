@@ -9,7 +9,7 @@ obj/
 *.suo
 
 # Runtime logs
-ScheduleApp/App_Data/Logs/
+AgentZero/App_Data/Logs/
 
 # SQLite transient files
 *.db-shm

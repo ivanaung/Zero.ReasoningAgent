@@ -1,8 +1,8 @@
-# Architecture Notes
+﻿# Architecture Notes
 
 ## Current Foundation
 
-Zero is currently a contest-focused copy of the existing Progress MVC application. The project keeps the original `ScheduleApp` project name and namespaces to reduce migration risk during the first cleanup task.
+Zero is currently a contest-focused copy of the existing Progress MVC application. The project folder and assembly are now `AgentZero`, while the original `ScheduleApp` namespaces remain in place to reduce migration risk during the first cleanup task.
 
 ## Application Layers
 
@@ -28,3 +28,4 @@ Task 1 intentionally hides non-demo modules from navigation and settings instead
 ## Deferred Renames
 
 Namespaces, project names, cookie names, data-protection names, database table names, and internal identifiers remain unchanged for now. These can be renamed in a later migration after the contest foundation is stable.
+
