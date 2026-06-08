@@ -177,14 +177,6 @@
   transition: transform 0.08s linear, text-shadow 0.08s linear, color 0.08s linear;
 }
 
-.zero-avatar-core img {
-  width: 88px;
-  height: 88px;
-  border-radius: 999px;
-  object-fit: cover;
-  box-shadow: 0 14px 34px rgba(15, 63, 146, 0.22);
-}
-
 .zero-avatar-core.listening {
   color: #0f3f92;
   animation: zeroPulse 1.2s ease-in-out infinite;
